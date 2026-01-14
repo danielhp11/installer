@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUSMEN - Checador de Tiempos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- SweetAlert2 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Estilos para ag-Grid -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine.css">
+
+    <!-- Agregar el script de ag-Grid sin estilos -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+
+    <!-- Agregar el script de highcharts -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/heatmap.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+    {% load static %}
+
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <!-- Barra de navegación -->
+    <nav class="bg-blue-300 p-4 flex items-center justify-between">
+        <!-- Logo y enlace de inicio -->
+        <div class="flex items-center">
+            <a href="{% url 'home' %}">
+                <!-- Logo más grande para que se vea bien -->
+                <img src="{% static 'images/BUSMEN.png' %}" alt="Logo Busmen" class="h-20 w-auto">
+            </a>
+        </div>
+
+        <!-- Enlaces de navegación -->
+        <ul class="flex space-x-8 text-black text-lg">
+            <li><a href="{% url 'home' %}" class="hover:text-orange-600 transition-colors">Lista de usuarios</a></li>
+            <li><a href="{% url 'check-to-day' %}" class="hover:text-orange-600 transition-colors">Registros del Día</a></li>
+            <li><a href="{% url 'check-to-day-by-user' %}" class="hover:text-orange-600 transition-colors">Registros por usuario</a></li>
+            <li><a href="{% url 'new-user' %}" class="hover:text-orange-600 transition-colors">Nuevo Usuario</a></li>
+            <li><a href="{% url 'device-ping' %}" class="hover:text-orange-600 transition-colors">Dispositivos</a></li>
+        </ul>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container mx-auto p-3">
+        {% block content %}
+        <!-- Aquí se insertará el contenido específico de cada vista -->
+        {% endblock %}
+    </div>
+
+    <script>
+        function loadComponent(
+            title = "Cargando...",
+            text = "Puede tardar unos minutos...",
+            typeColor = "info"
+        ){
+            return Swal.fire({
+                title: title,
+                text: text,
+                icon: typeColor,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Muestra el spinner
+                }
+            });
+        }
+    </script>
+</body>
+</html>

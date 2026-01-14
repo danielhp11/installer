@@ -1,0 +1,261 @@
+{% extends 'heades_nav.html' %}
+
+{% block content %}
+    {% if msg != "" %}
+        <div class="flex justify-center items-center w-full">
+            <div class="bg-blue-100 text-blue-800 p-4 rounded-lg shadow-md mb-6">
+                <p class="font-semibold text-lg">{{msg}}</p>
+            </div>
+        </div>
+    {% endif %}
+    <div class="flex justify-center items-start space-x-8">
+
+        <!-- Formulario -->
+        <form id="getUserData" action="/new-user/" method="POST" class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md h-96">
+            <h2 class="text-2xl font-semibold mb-6 text-gray-800 text-center">Registrar Nuevo Usuario / Actualizar usuario</h2>
+            {% csrf_token %}
+
+            <!-- Campo de entrada con autocompletado -->
+            <label for="user" class="block text-sm font-medium text-gray-700">Seleccione un usuario:</label>
+            <div class="relative mt-2">
+                <input
+                    list="users"
+                    id="user"
+                    name="user_display_name"
+                    placeholder="Escriba un nombre"
+                    autocomplete="off"
+                    class="block w-full border border-gray-300 rounded-md shadow-sm p-3 text-sm placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+                >
+                <datalist id="users">
+                    <!-- Opciones generadas dinámicamente -->
+                </datalist>
+                <!-- Campo oculto para el ID del usuario -->
+                <input type="hidden" id="user_id" name="user_id">
+            </div>
+
+            <!-- Botón de envío -->
+            <button
+                onclick="getUserData()"
+                class="mt-6 w-full bg-blue-500 text-white py-3 px-4 text-sm font-semibold rounded-md shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+            >
+                Verificar
+            </button>
+        </form>
+
+        <!-- Contenido adicional al lado del formulario (si hay datos) -->
+        {% if data is not None %}
+            <div class="bg-gray-100 p-6 rounded-lg shadow-lg w-full max-w-md h-96">
+                {% if not data.existed %}
+                    <p class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4">
+                        <strong>No</strong> cuenta con usuario registrado en el checador.
+                    </p>
+                {% endif %}
+                <div>
+                    <!-- Nombre -->
+                    <div class="mb-4">
+                        <label for="name_user" class="block text-sm font-medium text-gray-700">Nombre:</label>
+                        <div
+                            id="name_user"
+                            class="mt-1 block w-full px-4 py-2 text-sm border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-500 focus:ring-blue-500 focus:border-blue-500 pointer-events-none"
+                        >
+                            {{data.apellido_paterno}} {{data.apellido_materno}} {{data.nombre}}
+                        </div>
+                    </div>
+
+                    <!-- ID -->
+                    <div class="mb-4">
+                        <label for="id_user" class="block text-sm font-medium text-gray-700">ID:</label>
+                        <div
+                            id="id_user"
+                            class="mt-1 block w-full px-4 py-2 text-sm border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-500 focus:ring-blue-500 focus:border-blue-500 pointer-events-none"
+                        >
+                            {{data.id}}
+                        </div>
+                    </div>
+
+
+                    <!-- Privilege -->
+                    <div class="mb-4">
+                        <label for="privilege_user" class="block text-sm font-medium text-gray-700">Privilegios:</label>
+                        <select id="privilege_user" name="privilege_user" class="mt-1 block w-full px-4 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="14" {% if data.privilege == 14 %}selected{% endif %}>ADMINISTRADOR</option>
+                            <option value="0" {% if data.privilege == 0 %}selected{% endif %}>USUARIO</option>
+                        </select>
+                    </div>
+                </div>
+                <form id="fingerFormNewUser" method="POST" action="/new-user/">
+                    {% csrf_token %}
+                    <input type="hidden" id="userId" name="user_id" value="{{ data.id }}">
+                    <input type="hidden" id="userName" name="name" value="{{data.apellido_paterno}} {{data.apellido_materno}} {{data.nombre}}">
+                    <input type="hidden" id="userPrivilege" name="privilege" value="{{ data.privilege }}">
+
+                    <button
+                            onclick="createNewUser()"
+                            class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
+                    >
+                        {% if not data.existed %}
+                            CREAR USUARIO
+                        {% else %}
+                            ACTUALIZAR USUARIO
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if data.existed %}
+
+       <div class="mt-5">
+            <form id="fingerForm" method="GET" action="/add-new-finger/">
+                {% csrf_token %}
+                <!-- Selección de dispositivo -->
+                <p style="background-color: #fef3c7; /* Fondo amarillo claro */
+                          color: #b45309; /* Texto marrón oscuro */
+                          font-size: 1rem; /* Tamaño del texto */
+                          font-weight: 500; /* Peso medio del texto */
+                          padding: 10px; /* Espaciado interno */
+                          border: 2px solid #f59e0b; /* Borde naranja */
+                          border-radius: 5px; /* Bordes redondeados */
+                          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Sombra */
+                          text-align: center; /* Centrar el texto */
+                          line-height: 1.5; /* Espaciado entre líneas */
+                          ">
+                    <span style="font-weight: bold; text-decoration: underline;">*Por favor, selecciona </span> el dispositivo para realizar la
+                    <span style="font-weight: bold; color: #d97706;">captura de la huella dactilar </span> del usuario.
+                </p>
+                <div class="mb-6">
+                    <label for="device_user" class="block text-lg font-semibold text-gray-800 mb-2">Dispositivo:</label>
+                    <select
+                        id="device_user"
+                        name="dispositivo"
+                        class="mt-1 block w-full px-4 py-3 text-sm border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        onchange="toggleFingerBox()"
+                    >
+                        <option value="" disabled selected>Selecciona un dispositivo</option>
+                        {% for dispositivo in dispositivos %}
+                            <option value="{{ dispositivo.ip }}" {% if dispositivo.ip == 0 %}selected{% endif %}>
+                                {{ dispositivo.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Caja de huellas dactilares -->
+                <div id="box_finger" class="hidden border rounded-lg p-4 bg-gray-50 shadow-lg">
+                    <input type="hidden" id="userPrivilegeFinger" name="privilege" value="{{ data.privilege }}">
+                    <input type="hidden" id="fingerIndex" name="finger_index" value="">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 10 200 180" class="w-full h-full">
+                        <defs>
+                            <filter id="fingerShadow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feDropShadow dx="1" dy="1" stdDeviation="1" flood-color="black" />
+                            </filter>
+                        </defs>
+                        <g class="fingers">
+                            {% for item in data.finger %}
+                                {% if item.find == 0 %}
+                                    <text x="100" y="30" font-size="6" text-anchor="middle" fill="black">Mano izquierda</text>
+                                {% endif %}
+                                <circle
+                                    cx="{{ item.cx }}"
+                                    cy="{{ item.cy }}"
+                                    r="3"
+                                    style="fill: {% if item.registered %}green{% else %}red{% endif %};
+                                           stroke: black; stroke-width: 1;"
+                                    filter="url(#fingerShadow)"
+                                    data-finger-index="{{ item.find }}"
+                                    onclick="submitFingerForm(this)" />
+                                <text x="{{ item.cx }}" y="{{ item.cy|add:10 }}" font-size="3" text-anchor="middle" fill="black">
+                                    {{ item.label }}
+                                </text>
+                                {% if item.find == 5 %}
+                                    <text x="100" y="70" font-size="6" text-anchor="middle" fill="black">Mano derecha</text>
+                                {% endif %}
+                            {% endfor %}
+                        </g>
+                    </svg>
+                </div>
+
+                <input type="hidden" id="userIdFinger" name="user_id" value="{{ data.id }}">
+            </form>
+        </div>
+    {% endif %}
+
+   <script>
+        // Lista de usuarios desde el servidor
+        const usuarios = {{ usuarios|safe }};
+        const datalist = document.getElementById("users");
+        const inputUser = document.getElementById("user");
+        const hiddenInputUserId = document.getElementById("user_id");
+
+        // Rellenar el datalist con nombres
+        usuarios.forEach(user => {
+            const option = document.createElement("option");
+            option.value = `${user.apellido_paterno} ${user.apellido_materno} ${user.nombre}`; // Texto que verá el usuario
+            option.dataset.id = user.id; // Asignar el ID como un atributo de datos
+            datalist.appendChild(option);
+        });
+
+        // Detectar selección y guardar el ID correspondiente
+        inputUser.addEventListener("input", () => {
+            const selectedOption = Array.from(datalist.options).find(option => option.value === inputUser.value);
+            if (selectedOption) {
+                hiddenInputUserId.value = selectedOption.dataset.id; // Guardar el ID del usuario en el campo oculto
+            } else {
+                hiddenInputUserId.value = ""; // Limpiar el ID si no hay coincidencia
+            }
+        });
+
+        function submitFingerForm(element) {
+            // Obtener el índice del dedo desde el círculo clicado
+            const fingerIndex = element.getAttribute('data-finger-index');
+
+            // Actualizar el valor del campo oculto
+            document.getElementById('fingerIndex').value = fingerIndex;
+
+            // Enviar el formulario
+            document.getElementById('fingerForm').submit();
+
+            // Mostrar SweetAlert2
+            loadComponent("Procesando","Creando y cargando datos a los dispositivos...\n puede demorar unos minutos en cargar a todos los dispositivos.")
+
+        }
+
+        // Obtener los elementos select y input oculto
+        const selectPrivilege = document.getElementById('privilege_user');
+        const hiddenPrivilegeInput = document.getElementById('userPrivilege');
+
+        // Escuchar el cambio de selección en el select
+        selectPrivilege.addEventListener('change', () => {
+            // Actualizar el valor del input oculto con el valor seleccionado
+            hiddenPrivilegeInput.value = selectPrivilege.value;
+        });
+
+        function toggleFingerBox() {
+
+            const selectedDevice = document.getElementById('device_user').value;
+            const fingerBox = document.getElementById('box_finger');
+
+            if (selectedDevice) {
+                fingerBox.classList.remove('hidden');
+                fingerBox.classList.add('block');
+            } else {
+                fingerBox.classList.add('hidden');
+                fingerBox.classList.remove('block');
+            }
+        }
+
+        function getUserData(){
+            loadComponent("Buscando usuario")
+            document.getElementById('getUserData').submit();
+        }
+
+        function createNewUser(){
+            loadComponent("Creando usuario...");
+            document.getElementById('fingerFormNewUser').submit();
+        }
+
+    </script>
+
+{% endblock %}

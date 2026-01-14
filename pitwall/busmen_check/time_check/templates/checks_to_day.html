@@ -1,0 +1,407 @@
+{% extends 'heades_nav.html' %}
+
+{% block content %}
+    <div class="bg-gray-100 min-h-screen">
+        <div class="container mx-auto p-6">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-blue-600">Checador</h1>
+            </header>
+
+            <div class="flex justify-center">
+                <form id="formChangeDevice" action="/check-to-day/" method="POST" class="bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl space-y-6">
+                    {% csrf_token %}
+
+                    <div class="flex justify-between gap-8">
+                        <!-- Selector de dispositivo -->
+                        <div class="w-1/2">
+                            <label for="dispositivo" class="block text-sm font-medium text-gray-700 mb-2">
+                                Selecciona un dispositivo:
+                            </label>
+                            <select
+                                name="dispositivo"
+                                id="dispositivo"
+                                onchange="handlingChangeDevice()"
+                                class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="None" {% if dispositivo_seleccionado is None %}selected{% endif %}>Todos</option>
+                                {% for dispositivo in dispositivos %}
+                                    <option value="{{ dispositivo.ip }}"
+                                        {% if dispositivo.ip == dispositivo_seleccionado %}selected{% endif %}>
+                                        {{ dispositivo.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Selector de rango de fechas -->
+                        <div class="w-1/2">
+                            <div class="flex flex-col gap-4">
+                                <!-- Primera fila: fecha y hora inicio -->
+                                <div class="flex flex-col">
+                                    <label for="start-date" class="text-sm font-medium text-gray-700 mb-2">Fecha y hora inicio:</label>
+                                    <div class="flex gap-4 w-full">
+                                        <input value="{{start_date}}" type="date" id="start-date" name="start-date" class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-1/2">
+                                        <input value="{{start_time}}" type="time" id="start-time" name="start-time" class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-1/2">
+                                    </div>
+                                </div>
+
+                                <!-- Segunda fila: fecha y hora fin -->
+                                <div class="flex flex-col">
+                                    <label for="end-date" class="text-sm font-medium text-gray-700 mb-2">Fecha y hora fin:</label>
+                                    <div class="flex gap-4 w-full">
+                                        <input value="{{end_date}}" type="date" id="end-date" name="end-date" class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-1/2">
+                                        <input value="{{end_time}}" type="time" id="end-time" name="end-time" class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-1/2">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        id="btnGetChecksDevice"
+                        type="submit"
+                        class="w-full bg-blue-500 text-white py-3 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                        Mostrar
+                    </button>
+                </form>
+            </div>
+
+
+            <p class="text-green-600 text-lg m-3 mt-3">{{ msg }}</p>
+            <div style="height: 6vh; width: 95vh; display: flex; align-items: center; justify-content: space-around;">
+                <div class="relative group">
+                    <!-- Contenido principal -->
+                    <p class="cursor-pointer">ENTRADA LABORAL</p>
+                    <div style="height: 2vh; width: 7vh; background: #ccffcc;"></div>
+
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-80 p-2 text-center text-white bg-gray-800 rounded-md shadow-lg group-hover:block">
+                        <p>De Lunes a Sábado</p> <br/>
+                        <p>Monitoristas pgs | Afanadoras : 06:30 AM a 07:10AM</p>
+                        <p>Administrativos | Mecanicos : 07:30 AM a 08:10 AM</p>
+                        <p>Monitoristas pgs (nocturno) : 06:30 PM a 07:10 PM </p>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <!-- Contenido principal -->
+                    <p>SALIDA DESAYUNO</p>
+                    <div style="height: 2vh; width: 7vh; background: #fdfd96;"></div>
+
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-80 p-2 text-center text-white bg-gray-800 rounded-md shadow-lg group-hover:block">
+                        <p>09:00:00 AM - 11:00:00 AM (Tiempo máximo 30 minutos)</p>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <!-- Contenido principal -->
+                    <p>SALIDA COMIDA</p>
+                    <div style="height: 2vh; width: 7vh; background: #FFA07A;"></div>
+
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-80 p-2 text-center text-white bg-gray-800 rounded-md shadow-lg group-hover:block">
+                        <p>14:00:00 PM - 16:00:00 PM (Tiempo máximo 60 min) </p>
+                    </div>
+                </div>
+
+                <div class="relative group">
+                    <!-- Contenido principal -->
+                    <p>SALIDA LABORAL</p>
+                    <div style="height: 2vh; width: 7vh; background: #ffb3b3;"></div>
+
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-80 p-2 text-center text-white bg-gray-800 rounded-md shadow-lg group-hover:block">
+                        <p>De Lunes a Viernes</p>
+                        <p>Administrativos | mecanicos : 06:00 PM en adelante</p>
+                        <p>Afanadoras : 03:00 PM en adelante</p>
+                        <p>Monitoristas gps: 07:00 PM en adelante</p>
+                        <p>Monitoristas gps (nocturnos) : 07:00 AM en adelante</p><br/>
+                        <p>Sábados</p>
+                        <p>Administrativos : 12:00 PM en adelante</p>
+                        <p>Mecanicos : 01:00 PM en adelante</p>
+
+                    </div>
+                </div>
+
+                <div class="relative group">
+                    <!-- Contenido principal -->
+                    <p>Falta (F)</p>
+                    <div style="height: 2vh; width: 7vh; background: #E0E0E0;"></div>
+
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-80 p-2 text-center text-white bg-gray-800 rounded-md shadow-lg group-hover:block">
+                        <p>Usuarios que aún no han registrado entrada / salida</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div>
+                <button id="downloadCsv" class="bg-green-500 mb-4 text-white font-bold py-2 px-4 rounded hover:bg-green-700">
+                    Descargar
+                </button>
+
+                <button id="loadDataBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">
+                    Descargar reporte del mes
+                </button>
+
+            </div>
+
+            <div id="myGrid" class="ag-theme-alpine" style="height: 80vh; width: 90%;"></div>
+
+            <div id="myGridByMonth" class="ag-theme-alpine" style="height: 80vh; width: 90%; display: none;"></div>
+
+        </div>
+    </div>
+
+    <script>
+
+        let not_found = "F"
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const rowData = {{ usuarios|safe }};
+
+            const columnDefs = [
+                {headerName: "NOMBRE", field: "name", sortable: true, filter: true, minWidth: 350, sort: "asc"},
+                {headerName: "PUESTO", field: "puesto", sortable: true, filter: true, minWidth: 220},
+                {headerName: "FECHA", field: "date", sortable: true, filter: true, maxWidth: 130, sort: "desc"},
+                {headerName: "HORA", field: "time", sortable: true, filter: true, sort: "desc", maxWidth: 150},
+                {
+                    headerName: "ENTRADA/SALIDA",
+                    field: "",
+                    sortable: true,
+                    filter: true,
+                    maxWidth: 180,
+                    valueGetter: (params) => {
+                        return create_in_or_out(params.data)
+                    }
+                },
+                {headerName: "CHECADOR", field: "name_device", sortable: true, filter: true, minWidth: 250},
+            ];
+
+            const gridOptions = {
+                columnDefs: columnDefs,
+                rowData: rowData,
+                theme: 'legacy',
+                pagination: true,
+                paginationPageSize: 100,
+                paginationPageSizeSelector: [50, 100, 5000],
+                defaultColDef: {
+                    resizable: true,
+                },
+                onGridReady: (params) => {
+                    // Asigna la API al objeto gridOptions
+                    gridOptions.api = params.api;
+
+                },
+                getRowStyle: params => {
+                    return checkTimeToPosition(params.data)
+                }
+            };
+
+            const gridDiv = document.querySelector('#myGrid');
+
+            new agGrid.createGrid(gridDiv, gridOptions);
+
+            document.querySelector('#downloadCsv').addEventListener('click', () => {
+                if (gridOptions.api) {
+                    gridOptions.api.exportDataAsCsv();
+                }
+            });
+
+            const btn = document.querySelector('#loadDataBtn');
+            const originalText = btn.innerText;
+            let month = ""
+            // Mostrar cargando
+            btn.innerText = 'Cargando...';
+            btn.disabled = true;
+
+            const params = new URLSearchParams({
+                init: document.getElementById('start-date').value,
+                end: document.getElementById('end-date').value
+            });
+
+            try {
+                const response = await fetch(`/get-data-user-by-week/?${params.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Error al traer los datos');
+
+                const data = await response.json();
+                // console.log("Días:", data.days);
+                // console.log("Usuarios:", data.data);
+
+                // Seleccionamos el grid
+                const myGridByMonth = document.querySelector('#myGridByMonth');
+                month = data.month
+                // Si no existe, lo creamos
+                const gridOptionsMonth = {
+                    columnDefs: data.days,
+                    rowData: data.data,
+                    theme: 'legacy',
+                    pagination: true,
+                    paginationPageSize: 100,
+                    paginationPageSizeSelector: [50, 100, 5000],
+                    defaultColDef: {
+                        resizable: true,
+                    },
+                    onGridReady: (params) => {
+                        gridOptionsMonth.api = params.api;
+                    }
+                };
+                new agGrid.createGrid(myGridByMonth, gridOptionsMonth);
+
+                document.querySelector('#loadDataBtn').addEventListener('click', () => {
+                if (gridOptionsMonth.api) {
+                    gridOptionsMonth.api.exportDataAsCsv();
+                }
+            });
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ocurrió un error al cargar los datos');
+            } finally {
+                // Restaurar botón
+                btn.innerText = "Descargar: "+month;
+                btn.disabled = false;
+            }
+
+        });
+
+
+
+        function handlingChangeDevice(){
+            loadComponent()
+            document.getElementById("btnGetChecksDevice").hidden = true;
+            document.getElementById("formChangeDevice").submit();
+        }
+
+        let mon_afa = ["31", "79", "24"];
+        let mechanics = ["18", "19", "20", "21", "23", "78", "122", "189", "198", "199", "213", "214", "215", "216", "217", "218", "219","220","221","227","231","235"]
+
+        function checkTimeToPosition(dataCollection){
+
+             if(dataCollection.time === not_found)
+                 return {backgroundColor: '#E0E0E0'}
+
+
+            let color_in = {backgroundColor: '#ccffcc'}
+            let color_out = {backgroundColor: '#ffb3b3'}
+
+            // Convertimos la fecha en un objeto Date
+            const fechaObj = new Date(dataCollection.date);
+
+            // Obtenemos el día de la semana (0 = Domingo, 6 = Sábado)
+            const dayWeek = fechaObj.getDay();
+
+             if(mon_afa.includes(dataCollection.puesto_id)){
+             // PARAMS TO MONITORISTA / AFANADORA
+             //      let out_hour = dayWeek === 6 ? "":"";
+
+                 if(hour >= `06:30:00` && hour <= `07:10:00`){
+                     return color_in;
+
+                 }else if(dayWeek === 5 && hour >= "12:00:00"){
+                     return color_out;
+
+                 }else if(hour >= `15:00:00` &&  dataCollection.puesto_id === "24"){
+                     return color_out;
+
+                 }else if(hour >= `19:00:00` &&  dataCollection.puesto_id !== "24"){
+                     return color_out;
+                 }else if( dataCollection.time >= "09:00:00" && dataCollection.time <= "11:00:00"){
+                     return { backgroundColor: '#fdfd96' };
+                 }else if(dataCollection.time >= "14:00:00" && dataCollection.time <= "16:00:00"){
+                     return { backgroundColor: '#FFA07A' };
+                 }
+
+             }else{
+             // PARAMS TO ADMINISTRATIVOS / Mecanicos
+
+                 if(dataCollection.time >= `07:30:00` && dataCollection.time <= `08:10:00`){
+                     return color_in;
+                 }
+                 else if(dataCollection.time >= `18:00:00`){
+                     return color_out;
+
+                 }else if(mechanics.includes(dataCollection.puesto_id) && dayWeek === 5 && dataCollection.time >= "13:00:00" ){
+                     return color_out;
+
+                 }else if(dayWeek === 5 && dataCollection.time >= "12:00:00" && !mechanics.includes(dataCollection.puesto_id)){
+                     return color_out;
+
+                 }else if( dataCollection.time >= "09:00:00" && dataCollection.time <= "11:00:00"){
+                     return { backgroundColor: '#fdfd96' };
+
+                 }else if(dataCollection.time >= "14:00:00" && dataCollection.time <= "16:00:00"){
+                     return { backgroundColor: '#FFA07A' };
+
+                 }
+             }
+
+         }
+
+        function create_in_or_out(parms){
+
+            if(parms.time === not_found)
+                return  not_found
+
+            // Convertimos la fecha en un objeto Date
+            const fechaObj = new Date(parms.date);
+
+            // Obtenemos el día de la semana (0 = Domingo, 6 = Sábado)
+            const dayWeek = fechaObj.getDay();
+
+            // return "E"
+             if(mon_afa.includes(parms.puesto_id)){
+             // PARAMS TO MONITORISTA / AFANADORA
+             //      let out_hour = dayWeek === 6 ? "":"";
+                 if(parms.time >= `06:30:00` && parms.time <= `07:10:00`){
+                     return "E";
+
+                 }else if(dayWeek === 5 && parms.time >= "12:00:00"){
+                     return "S";
+
+                 }else if(parms.time >= `15:00:00` &&  parms.puesto_id === "24"){
+                     return "S";
+
+                 }else if(parms.time >= `19:00:00` &&  parms.puesto_id !== "24"){
+                     return "S";
+                 }else if( parms.time >= "09:00:00" && parms.time <= "11:00:00"){
+                     return "E-Almuerzo";
+                 }else if(parms.time >= "14:00:00" && parms.time <= "16:00:00"){
+                     return "E-Comida";
+                 }
+
+             }else{
+             // PARAMS TO ADMINISTRATIVOS / Mecanicos
+
+                 if(parms.time >= `07:30:00` && parms.time <= `08:10:00`){
+                     return  "E";
+                 }
+                 else if(parms.time >= `18:00:00`){
+                     return "S";
+
+                 }else if(mechanics.includes(parms.puesto_id) && dayWeek === 5 && parms.time >= "13:00:00" ){
+                     return "S";
+
+                 }else if(dayWeek === 5 && parms.time >= "12:00:00" && !mechanics.includes(parms.puesto_id)){
+                     return "S";
+
+                 }else if( parms.time >= "09:00:00" && parms.time <= "11:00:00"){
+                     return "E-Almuerzo";
+
+                 }else if(parms.time >= "14:00:00" && parms.time <= "16:00:00"){
+                     return "E-Comida";
+
+                 }
+             }
+         }
+
+
+    </script>
+{% endblock %}

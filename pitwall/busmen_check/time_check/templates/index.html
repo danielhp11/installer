@@ -1,0 +1,225 @@
+{% extends 'heades_nav.html' %}
+
+{% block content %}
+
+    <div class="container mx-auto p-6">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-600">USUARIOS</h1>
+        </header>
+
+        {% if conn %}
+            <p class="text-green-600 text-lg font-medium mb-4">{{ msg }}</p>
+
+            <!-- Contenedor para AG-Grid -->
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <div>
+                <button id="downloadCsv" class="bg-green-500 text-white mb-3 font-bold py-2 px-4 rounded hover:bg-green-700">
+                    Descargar
+                </button>
+            </div>
+            <div id="myGrid" class="ag-theme-alpine" style="height: 80vh; width: 100%;"></div>
+        {% else %}
+            <p class="text-red-600 text-lg font-medium">{{ msg }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Script para inicializar AG-Grid -->
+    <script>
+        // Datos desde Django
+        const rowData = {{ usuarios|safe }};
+
+        // Columnas de la tabla
+        const columnDefs = [
+            // { headerName: "ID CHECADOR", field: "user_id", sortable: true, filter: true, maxWidth: 120 },
+            {
+                headerName: "ACCIONES",
+                field: "actions",
+                cellRenderer: (params) => {
+                    const button = document.createElement('button');
+                    button.innerText = "ELIMINAR";
+                    button.className = `
+                        bg-yellow-500
+                        text-white
+                        font-semibold
+                        px-2
+                        rounded-lg
+                        shadow-md
+                        transition
+                        duration-300
+                        ease-in-out
+                        transform
+                        hover:bg-red-600
+                        hover:scale-105
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-blue-400
+                        focus:ring-offset-2
+                    `;
+                    button.style.cursor = "pointer";
+                    button.addEventListener('click', () => {
+                        // Acción al hacer clic en el botón
+                        deleteUser(params.data)
+                    });
+                    return button;
+                },
+                maxWidth: 130,
+            },
+            { headerName: "ID", field: "id", sortable: true, filter: true, maxWidth: 110 },
+            { headerName: "NOMBRE", field: "name", sortable: true, filter: true, minWidth: 350, sort: "asc" },
+            { headerName: "PUESTO", field: "puesto", sortable: true, filter: true, minWidth: 250},
+            // { headerName: "PRIVILEGIO", field: "privilege", sortable: true, filter: true },
+            // { headerName: "BUSMEN", field: "exist_busmen", sortable: true, filter: true, minWidth: 220 },
+            // { headerName: "ACTIVO BUSMEN", field: "activo", sortable: true, filter: true, maxWidth: 130}
+        ];
+
+        // Configuración de la tabla
+        const gridOptions = {
+            columnDefs: columnDefs,
+            rowData: rowData,
+            pagination: true,
+            theme: 'legacy',
+            paginationPageSize: 100,
+            paginationPageSizeSelector: [50, 100, 5000],
+            onGridReady: (params) => {
+                // Asigna la API al objeto gridOptions
+                gridOptions.api = params.api;
+
+            },
+            defaultColDef: {
+                resizable: true, // Hacer columnas ajustables
+            },
+
+            // onRowDoubleClicked: (event) => {
+            //     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            //
+            //     // Obtener el contenido del modal y reemplazar datos dinámicamente
+            //     fetch('/data-user/',{
+            //         method: 'POST',
+            //         headers:{
+            //             'Content-Type': 'application/json',
+            //             'X-CSRFToken': csrftoken
+            //         },
+            //         body: JSON.stringify(event.data)
+            //     })
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         Swal.fire({
+            //             title: event.data.exist_busmen,
+            //             html: data.html,
+            //             icon: 'info',
+            //             width: '60%',
+            //             showCloseButton: true,
+            //             confirmButtonText: 'Cerrar'
+            //         });
+            //     })
+            //     .catch(error => {
+            //         console.error('Error al obtener el contenido del modal:', error);
+            //         Swal.fire({
+            //             title: 'Error',
+            //             text: 'No se pudo cargar el contenido del modal.',
+            //             icon: 'error'
+            //         });
+            //     });
+            // }
+        };
+
+        // Inicializar AG-Grid
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridDiv = document.querySelector('#myGrid');
+            new agGrid.createGrid(gridDiv, gridOptions);
+
+            document.querySelector('#downloadCsv').addEventListener('click', () => {
+                if (gridOptions.api) {
+                    gridOptions.api.exportDataAsCsv();
+                }
+            });
+        });
+
+        function deleteUser(infoUser){
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            Swal.fire({
+                title: 'Eliminar usuario \n'+infoUser.name,
+                text: "El usuario va hacer eliminado, no podra hacer uso de los checadores",
+                icon: 'warning',
+                confirmButtonText: 'Aceptar',
+                cancelButtonText: 'Cancelar',
+                showCancelButton: true,
+                showConfirmButton: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    loadComponent("Cargando...","Eliminando usuario...", "warning")
+                    
+                    fetch('/index/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken // Incluye el token CSRF
+                        },
+                        body: JSON.stringify({ user_id: infoUser }) // Datos a enviar
+                    })
+                    .then(response => response.json())
+                    .then(things => {
+                        if(things.success){
+                            window.location.reload();
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+                else if (result.isDismissed) {
+                    // Acción cuando se cancela
+                    Swal.close();
+                }
+            });
+        }
+
+        function synchronizeUser(){
+            let id_user = document.getElementById("id_user");
+            const id_value = id_user.textContent.trim();
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            Swal.fire({
+                title: 'Sincronizar el usuario',
+                text: "",
+                icon: 'warning',
+                confirmButtonText: 'Aceptar',
+                cancelButtonText: 'Cancelar',
+                showCancelButton: true,
+                showConfirmButton: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    loadComponent("Cargando...","Sincronizando usuario...", "warning")
+
+                    fetch('/synchronize-user/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken // Incluye el token CSRF
+                        },
+                        body: JSON.stringify({ user_id: id_value }) // Datos a enviar
+                    })
+                    .then(response => response.json())
+                    .then(things => {
+                        if(things.success){
+                            window.location.reload();
+                            // console.log(things.message)
+                            // loadComponent(things.message, "info")
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+                else if (result.isDismissed) {
+                    // Acción cuando se cancela
+                    Swal.close();
+                }
+            });
+
+        }
+
+    </script>
+
+{% endblock %}

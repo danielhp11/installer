@@ -1,0 +1,286 @@
+{% extends 'heades_nav.html' %}
+
+{% block content %}
+    <div class="flex items-center gap-4">
+        <input
+            list="users"
+            id="user"
+            name="user_display_name"
+            placeholder="Escriba un nombre"
+            autocomplete="off"
+            class="w-full border border-gray-300 rounded-md shadow-sm p-3 text-sm placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+        >
+        <datalist id="users">
+            <!-- Opciones generadas dinámicamente -->
+        </datalist>
+
+
+        <select
+            id="select_month"
+            name="select_month"
+            class="border border-gray-300 rounded-md shadow-sm p-3 text-sm focus:ring-blue-500 focus:border-blue-500"
+        >
+            <option value="" {% if month_now == "" %}selected{% endif %}>Seleccione un mes</option>
+            <option value="01" {% if month_now == "01" %}selected{% endif %}>Enero</option>
+            <option value="02" {% if month_now == "02" %}selected{% endif %}>Febrero</option>
+            <option value="03" {% if month_now == "03" %}selected{% endif %}>Marzo</option>
+            <option value="04" {% if month_now == "04" %}selected{% endif %}>Abril</option>
+            <option value="05" {% if month_now == "05" %}selected{% endif %}>Mayo</option>
+            <option value="06" {% if month_now == "06" %}selected{% endif %}>Junio</option>
+            <option value="07" {% if month_now == "07" %}selected{% endif %}>Julio</option>
+            <option value="08" {% if month_now == "08" %}selected{% endif %}>Agosto</option>
+            <option value="09" {% if month_now == "09" %}selected{% endif %}>Septiembre</option>
+            <option value="10" {% if month_now == "10" %}selected{% endif %}>Octubre</option>
+            <option value="11" {% if month_now == "11" %}selected{% endif %}>Noviembre</option>
+            <option value="12" {% if month_now == "12" %}selected{% endif %}>Diciembre</option>
+        </select>
+
+
+        <!-- Campo oculto para el ID del usuario -->
+        <input type="hidden" id="user_id" name="user_id">
+
+        <button onclick="handlingBtnTimeCheck()"
+                class="bg-blue-500 text-white px-4 py-3 rounded-md shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            Buscar
+        </button>
+    </div>
+
+    <div id="calendar-heatmap" style="height: 90vh; margin-top: 3vh"></div>
+
+    <script>
+
+        const usuarios = {{ usuarios|safe }};
+        const inputUser = document.getElementById("user");
+        const datalist = document.getElementById("users");
+        const hiddenInputUserId = document.getElementById("user_id");
+        const hiddenDate = document.getElementById("select_month");
+
+        const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+        // Rellenar el datalist con nombres
+        usuarios.forEach(user => {
+            const option = document.createElement("option");
+            option.value = `${user.apellido_paterno} ${user.apellido_materno} ${user.nombre}`; // Texto que verá el usuario
+            option.dataset.id = user.id; // Asignar el ID como un atributo de datos
+            datalist.appendChild(option);
+        });
+
+        // Detectar selección y guardar el ID correspondiente
+        inputUser.addEventListener("input", () => {
+            const selectedOption = Array.from(datalist.options).find(option => option.value === inputUser.value);
+            if (selectedOption) {
+                hiddenInputUserId.value = selectedOption.dataset.id; // Guardar el ID del usuario en el campo oculto
+            } else {
+                hiddenInputUserId.value = ""; // Limpiar el ID si no hay coincidencia
+            }
+        });
+
+        function handlingBtnTimeCheck(){
+
+            Swal.fire({
+                title: 'Cargando...',
+                text: 'Obteniendo datos del servidor',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Muestra el indicador de carga
+                }
+            })
+            let year = {{ year_now }};
+            let date = `${year}-${hiddenDate.value}`;
+
+            fetch(`/check-to-day/${hiddenInputUserId.value}/${date}/`)
+            .then(response => response.json())
+            .then(json => {
+
+                Swal.close();
+                // Crear el gráfico
+                Highcharts.chart('calendar-heatmap', {
+                    chart: {
+                        type: 'heatmap'
+                    },
+
+                    title: {
+                        text: 'HISTORIAL DE REGISTROS EN LOS TODOS LOS CHECADORES',
+                        align: 'left'
+                    },
+
+                    subtitle: {
+                        text: `REPORTE DEL MES ${json.date_select}`,
+                        align: 'left'
+                    },
+
+                    accessibility: {
+                        landmarkVerbosity: 'one'
+                    },
+
+                    tooltip: {
+                        enabled: true,
+                        outside: true,
+                        zIndex: 20,
+                        headerFormat: '',
+                        pointFormat: '{#unless point.custom.empty}{point.date:%A, %b %e, ' +
+                            '%Y}{/unless}',
+                        nullFormat: 'No data'
+                    },
+
+                    xAxis: {
+                        categories: weekdays,
+                        opposite: true,
+                        lineWidth: 26,
+                        offset: 13,
+                        lineColor: 'rgba(27, 26, 37, 0.2)',
+                        labels: {
+                            rotation: 0,
+                            y: 20,
+                            style: {
+                                textTransform: 'uppercase',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        accessibility: {
+                            description: 'weekdays',
+                            rangeDescription: 'X Axis is showing all 7 days of the week, ' +
+                                'starting with Sunday.'
+                        }
+                    },
+
+                    yAxis: {
+                        min: 0,
+                        max: 5,
+                        accessibility: {
+                            description: 'weeks'
+                        },
+                        visible: false
+                    },
+
+                    legend: {
+                        align: 'right',
+                        layout: 'vertical',
+                        verticalAlign: 'middle',
+                        enabled: false
+                    },
+
+                    colorAxis: {
+                        min: 0,
+                        stops: [
+                            [0.2, 'lightblue'],
+                            [0.4, '#CBDFC8'],
+                            [0.6, '#F3E99E'],
+                            [0.9, '#F9A05C']
+                        ],
+                        labels: {
+                            format: '{value} °C'
+                        }
+                    },
+
+                    series: [{
+                        keys: ['x', 'y', 'value', 'date', 'id'],
+                        data: generateChartData(json.data),
+                        nullColor: 'rgba(196, 196, 196, 0.2)',
+                        borderWidth: 2,
+                        borderColor: 'rgba(196, 196, 196, 0.2)',
+                        dataLabels: [{
+                            enabled: true,
+                            format: '{#unless point.custom.empty}{point.value:.1f}{/unless}',
+                            style: {
+                                textOutline: 'none',
+                                fontWeight: 'normal',
+                                fontSize: '0.6rem'
+                            },
+                            y: 2
+                        }, {
+                            enabled: true,
+                            align: 'left',
+                            verticalAlign: 'top',
+                            format: '{#unless ' +
+                                'point.custom.empty}{point.custom.monthDay}{/unless}',
+                            backgroundColor: 'whitesmoke',
+                            padding: 2,
+                            style: {
+                                textOutline: 'none',
+                                color: 'rgba(70, 70, 92, 1)',
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold',
+                                opacity: 0.5
+                            },
+                            x: 1,
+                            y: 1
+                        }]
+                    }]
+                });
+            })
+            .catch(error => console.error('Error al obtener los datos:', error));
+
+        }
+
+        function generateChartData(data) {
+
+            // Calculate the starting weekday index (0-6 of the first date in the given
+            // array)
+            const firstWeekday = new Date(data[0].date).getDay(),
+                monthLength = data.length,
+                lastElement = data[monthLength - 1].date,
+                lastWeekday = new Date(lastElement).getDay(),
+                lengthOfWeek = 6,
+                emptyTilesFirst = firstWeekday,
+                chartData = [];
+
+            // Add the empty tiles before the first day of the month with null values to
+            // take up space in the chart
+            for (let emptyDay = 0; emptyDay < emptyTilesFirst; emptyDay++) {
+                chartData.push({
+                    x: emptyDay,
+                    y: 5,
+                    value: null,
+                    date: null,
+                    custom: {
+                        empty: true
+                    }
+                });
+            }
+
+            // Loop through and populate with temperature and dates from the dataset
+            for (let day = 1; day <= monthLength; day++) {
+                // Get date from the given data array
+                const date = data[day - 1].date;
+                // Offset by thenumber of empty tiles
+                const xCoordinate = (emptyTilesFirst + day - 1) % 7;
+                const yCoordinate = Math.floor((firstWeekday + day - 1) / 7);
+                const id = day;
+
+                // Get the corresponding temperature for the current day from the given
+                // array
+                const temperature = data[day - 1].temperature;
+
+                chartData.push({
+                    x: xCoordinate,
+                    y: 5 - yCoordinate,
+                    value: temperature,
+                    date: new Date(date).getTime(),
+                    custom: {
+                        monthDay: id
+                    }
+                });
+            }
+
+            // Fill in the missing values when dataset is looped through.
+            const emptyTilesLast = lengthOfWeek - lastWeekday;
+            for (let emptyDay = 1; emptyDay <= emptyTilesLast; emptyDay++) {
+                chartData.push({
+                    x: (lastWeekday + emptyDay) % 7,
+                    y: 0,
+                    value: null,
+                    date: null,
+                    custom: {
+                        empty: true
+                    }
+                });
+            }
+            return chartData;
+        }
+
+
+
+    </script>
+
+{% endblock %}
