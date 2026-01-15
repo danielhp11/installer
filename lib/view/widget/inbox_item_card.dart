@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:instaladores_new/service/request_service.dart';
+import 'package:instaladores_new/service/user_session_service.dart';
+import 'package:provider/provider.dart';
 
 import '../../service/response_service.dart';
+import '../../viewModel/list_ticket_viewmodel.dart';
+import 'bottom_sheet_utils.dart';
 
 class InboxItemCard extends StatelessWidget {
   final ApiResTicket item;
-  final VoidCallback onTap;
+  // final VoidCallback onTap;
 
   static const String statusOpen = "ABIERTO";
   static const String statusProcess = "PROCESO";
   static const String statusPendingValidation = "PENDIENTE_VALIDACION";
   static const String statusFinished = "FINALIZADO";
-  static const String statusClosed = "CERRADO";
+  static const String statusClosed = "CANCELADO";
 
 
 
   const InboxItemCard({
     super.key,
     required this.item,
-    required this.onTap,
+    // required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isClosed = item.status == "CERRADO";
+    final viewModel = context.watch<ListTicketViewmodel>();
+
 
     return Card(
       elevation: isClosed ? 1 : 3,
@@ -33,7 +40,7 @@ class InboxItemCard extends StatelessWidget {
       ),
       color: _getBackgroundColor(),
       child: InkWell(
-        onTap: onTap,
+        // onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -96,23 +103,53 @@ class InboxItemCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // Technician Name
-              Row(
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(
-                    Icons.person,
-                    size: 14,
-                    color: Colors.grey.shade600,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person,
+                        size: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        item.technicianName,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    item.technicianName,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade700,
-                    ),
+                  Row(
+                    children: [
+                      Spacer(),
+                      _iconOption(
+                        icon: Icons.brunch_dining_rounded,
+                        onPressed: () => print("=> Init job"),
+                        visible: !UserSession().isMaster && item.status != statusClosed,
+                      ),
+                      _iconOption(
+                        icon: Icons.pin_end_sharp,
+                        onPressed: () =>print("=> closed job"),
+                        visible: !UserSession().isMaster && item.status != statusClosed,
+                      ),
+                      _iconOption(
+                        icon: Icons.security_update_outlined,
+                        onPressed: () => showFuelFormBottomSheet(context, item),
+                        visible: UserSession().isMaster && item.status != statusClosed,
+                      ),
+                      _iconOption(
+                        icon: Icons.delete,
+                        onPressed: () => _showConfirmationDialog(context, ()=> viewModel.deleteTicket(context: context, idTicket: item.id) ),
+                        visible: UserSession().isMaster && item.status != statusClosed,
+                      ),
+                    ],
                   ),
                 ],
-              ),
+              )
             ],
           ),
         ),
@@ -135,6 +172,19 @@ class InboxItemCard extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
+    );
+  }
+
+  Widget _iconOption({
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool visible = true, // Por defecto es visible
+  }) {
+    if (!visible) return const SizedBox.shrink(); // Si no es visible, no ocupa espacio
+
+    return IconButton(
+      icon: Icon(icon),
+      onPressed: onPressed,
     );
   }
 
@@ -194,4 +244,36 @@ class InboxItemCard extends StatelessWidget {
         return const BorderSide(color: Colors.transparent);
     }
   }
+
+  void _showConfirmationDialog(
+      BuildContext context,
+      VoidCallback onConfirm,
+      ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('¡Eliminar!'),
+          content: const Text('¿Deseas eliminar permanentemente?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Aceptar'),
+              onPressed: () {
+                onConfirm();
+                // Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }

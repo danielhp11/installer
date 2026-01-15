@@ -7,7 +7,7 @@ class RequestServ {
 
   static const String urlAuthentication = "auth/login";
   static const String urlGetTickets = "tickets";
-
+  static const String urlInstaller = "users/?all=false";
 
 
 

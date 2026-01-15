@@ -32,6 +32,7 @@ class ApiResTicket {
   final String technicianName;
   final String unitId;
   final String? company;
+  final String? create_at;
   final List<ItemHistory>? history;
 
   ApiResTicket({
@@ -43,6 +44,7 @@ class ApiResTicket {
     required this.status,
     required this.technicianName,
     required this.unitId,
+    this.create_at,
     this.company,
     this.history,
   });
@@ -57,7 +59,8 @@ class ApiResTicket {
       status: json['status'] ?? '',
       technicianName: json['technicianName'] ?? '',
       unitId: json['unitId'] ?? '',
-      company: json['company'], // nullable
+      company: json['company'],
+      create_at: json['create_at'] ?? json['createdAt'], // Soporte para ambos nombres de campo
       history: json['history'] != null
           ? List<ItemHistory>.from(
           (json['history'] as List).map((x) => ItemHistory.fromJson(x)))

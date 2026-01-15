@@ -2,33 +2,42 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../service/response_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
 
 class CreateNewTicketForm extends StatefulWidget {
 
-  const CreateNewTicketForm({super.key});
+  final ApiResTicket? ticket;
+
+  const CreateNewTicketForm({super.key, required this.ticket});
 
   @override
   State<CreateNewTicketForm> createState() => _CreateNewTicketForm();
 }
 
 class _CreateNewTicketForm extends State<CreateNewTicketForm> {
-  // final _formKey = GlobalKey<FormState>();
 
-  // final _companyController = TextEditingController();
-  // final _installerController = TextEditingController();
-  // final _unitController = TextEditingController();
-  // final _descriptionController = TextEditingController();
-
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  // }
+  bool isUpdate = false;
 
   @override
-  void dispose() {
-    super.dispose();
+  void initState() {
+    super.initState();
+    final vm = context.read<ListTicketViewmodel>();
+    vm.getInstaller();
+    if (widget.ticket != null) {
+      // Editar: llenar con datos
+      Future.microtask(() {
+        vm.companyController.text = widget.ticket!.company!;
+        vm.installerController.text = widget.ticket!.technicianName;
+        vm.unitController.text = widget.ticket!.unitId;
+        vm.descriptionController.text = widget.ticket!.description;
+      });
+      isUpdate = true;
+    } else {
+      // Nuevo: Limpiar campos anteriores
+      Future.microtask(() => vm.resetForm());
+      isUpdate = false;
+    }
   }
 
   @override
@@ -77,18 +86,32 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
 
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => viewModel.createticket(context),
+                onPressed: () {
+                  if (isUpdate) {
+                    viewModel.createTicket(
+                      context: context,
+                      isUpdate: true,
+                      idTicket: widget.ticket!.id,
+                    );
+                  } else {
+                    viewModel.createTicket(context: context);
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
+                child: isUpdate? const Text(
                   'Guardar',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ):Text(
+                  'Crear',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-              ),
+              )
+
             ],
           ),
         ),
