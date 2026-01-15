@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'response_service.dart';
 
 class RequestServ {
   // static const String baseUrlAdm = "";
@@ -9,7 +10,11 @@ class RequestServ {
   static const String urlGetTickets = "tickets";
   static const String urlInstaller = "users/?all=false";
 
+  static const String _apiUser = 'apinstaladores@geovoy.com';
+  static const String _apiPass = 'Instaladores*9';
 
+  final String basicAuth =
+      'Basic ${base64Encode(utf8.encode('$_apiUser:$_apiPass'))}';
 
   // Singleton pattern
   RequestServ._privateConstructor();
@@ -111,4 +116,40 @@ class RequestServ {
       return null;
     }
   }
+
+
+// region Units
+  Future<List<dynamic>?> fetchStatusDevice({bool isTemsa = false }) async {
+
+    try {
+      final url = isTemsa? Uri.parse("https://rastreotemsa.geovoy.com/api/devices") :Uri.parse("https://rastreobusmen.geovoy.com/api/devices");
+
+      final response = await http.get(
+        url,
+        // headers: {"Cookie": cookie},
+        headers: {"Authorization": basicAuth},
+      );
+
+      if (response.statusCode != 200) {
+        print("HTTP error: ${response.statusCode}");
+        return null;
+      }
+
+      final List<dynamic> jsonBody = jsonDecode(response.body);
+      
+      if (isTemsa) {
+        return jsonBody.map((item) => UnitTemsa.fromJson(item)).toList();
+      } else {
+        return jsonBody.map((item) => UnitBusmen.fromJson(item)).toList();
+      }
+
+    } catch (e) {
+      print("Error fetchStatusForUnit: $e");
+      return null;
+    }
+  }
+
+
+// endregion Units
+
 }

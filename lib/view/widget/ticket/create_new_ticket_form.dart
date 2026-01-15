@@ -2,8 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../service/request_service.dart';
 import '../../../service/response_service.dart';
+import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
+import '../selector_field.dart';
 
 class CreateNewTicketForm extends StatefulWidget {
 
@@ -22,21 +25,44 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
   @override
   void initState() {
     super.initState();
+    _initData();
+  }
+
+  Future<void> _initData() async {
     final vm = context.read<ListTicketViewmodel>();
+    
+    // Cargamos instaladores
     vm.getInstaller();
+    
+    // Cargamos y combinamos unidades de Busmen y Temsa
+    await vm.loadExternalUnits();
+
     if (widget.ticket != null) {
       // Editar: llenar con datos
-      Future.microtask(() {
-        vm.companyController.text = widget.ticket!.company!;
+      if (mounted) {
+        vm.companyController.text = widget.ticket!.company ?? '';
         vm.installerController.text = widget.ticket!.technicianName;
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
-      });
-      isUpdate = true;
+        
+        // Intentar auto-seleccionar la unidad si ya existe en la lista
+        if (vm.units.contains(widget.ticket!.unitId)) {
+          vm.setSelectedUnit(widget.ticket!.unitId);
+        }
+        setState(() {
+          isUpdate = true;
+        });
+      }
     } else {
       // Nuevo: Limpiar campos anteriores
-      Future.microtask(() => vm.resetForm());
-      isUpdate = false;
+      if (mounted) {
+        vm.resetForm();
+        // Valor por defecto basado en la rama seleccionada
+        vm.companyController.text = UserSession().branchRoot;
+        setState(() {
+          isUpdate = false;
+        });
+      }
     }
   }
 
@@ -60,24 +86,14 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
             children: [
               _header(),
               const SizedBox(height: 16),
-              // _card(
-              //   child: Column(
-              //     children: [
-              //       // _vehicleField(),
-              //       const SizedBox(height: 16),
-              //       // _cardField(),
-              //     ],
-              //   ),
-              // ),
-              const SizedBox(height: 16),
               _card(
                 child: Column(
                   children: [
                     _textField(viewModel.companyController, 'Empresa', Icons.business),
                     const SizedBox(height: 16),
-                    _textField(viewModel.installerController, 'Instalador', Icons.pan_tool),
+                    _installerField(viewModel),
                     const SizedBox(height: 16),
-                    _textField(viewModel.unitController, 'Unidad', Icons.bus_alert),
+                    _unitField(viewModel),
                     const SizedBox(height: 16),
                     _textField(viewModel.descriptionController, 'Descripcion', Icons.text_snippet_outlined),
                   ],
@@ -103,12 +119,9 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: isUpdate? const Text(
-                  'Guardar',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ):Text(
-                  'Crear',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  isUpdate ? 'Guardar' : 'Crear',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               )
 
@@ -151,43 +164,21 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-  // Widget _vehicleField() {
-  //   return SelectorField(
-  //     label: 'Vehículo',
-  //     icon: Icons.directions_car,
-  //     value: _selectedVehicle == null
-  //         ? null
-  //         : '${_selectedVehicle!.brand} ${_selectedVehicle!.model}',
-  //     onTap: _selectVehicle, // Disable tap if vehicle is pre-selected
-  //   );
-  // }
+  Widget _installerField(ListTicketViewmodel vm) {
+    return SelectorField(
+      label: 'Instalador',
+      icon: Icons.person_search_outlined,
+      value: vm.selectedInstaller?.full_name ?? (vm.installerController.text.isEmpty ? null : vm.installerController.text),
+      onTap: () => _selectInstaller(vm),
+    );
+  }
 
-  // Widget _cardField() {
-  //   return SelectorField(
-  //     label: 'Tarjeta',
-  //     icon: Icons.credit_card,
-  //     value: _selectedCard == null
-  //         ? null
-  //         : '${_selectedCard!.name} • ****${_selectedCard!.number.substring(_selectedCard!.number.length - 4)}',
-  //     onTap: _selectCard, // Disable tap if card is pre-selected
-  //   );
-  // }
-
-  Widget _numberField(
-      TextEditingController c, String label, IconData icon) {
-    return TextFormField(
-      controller: c,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'Campo requerido';
-        if (double.tryParse(v) == null) return 'Número inválido';
-        return null;
-      },
+  Widget _unitField(ListTicketViewmodel vm) {
+    return SelectorField(
+      label: 'Unidad',
+      icon: Icons.bus_alert,
+      value: vm.selectedUnit ?? (vm.unitController.text.isEmpty ? null : vm.unitController.text),
+      onTap: () => _selectUnit(vm),
     );
   }
 
@@ -208,75 +199,86 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-
-// Widget _datePicker() {
-  //   return TextFormField(
-  //     controller: _dateController,
-  //     readOnly: true,
-  //     decoration: const InputDecoration(
-  //       labelText: 'Fecha',
-  //       prefixIcon: Icon(Icons.calendar_today),
-  //       border: OutlineInputBorder(),
-  //     ),
-  //     onTap: () async {
-  //       final date = await showDatePicker(
-  //         context: context,
-  //         initialDate: _selectedDate ?? DateTime.now(),
-  //         firstDate: DateTime(2000),
-  //         lastDate: DateTime.now(),
-  //       );
-  //
-  //       if (date != null) {
-  //         setState(() {
-  //           _selectedDate = date;
-  //           _dateController.text =
-  //               date.toIso8601String().split('T').first;
-  //         });
-  //       }
-  //     },
-  //   );
-  // }
-
   // ================= LOGIC =================
 
-  // Future<void> _selectVehicle() async {
-  //   final vehicles = context.read<VehicleViewModel>().vehicle;
-  //
-  //   final selected = await showModalBottomSheet<VehicleModel>(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     builder: (_) => SelectionBottomSheet<VehicleModel>(
-  //       title: 'Seleccionar vehículo',
-  //       items: vehicles,
-  //       labelBuilder: (v) => '${v.brand} ${v.model}',
-  //       subtitleBuilder: (v) => Text('Placas: ${v.plate}'),
-  //     ),
-  //   );
-  //
-  //   if (selected != null) {
-  //     setState(() => _selectedVehicle = selected);
-  //   }
-  // }
+  Future<void> _selectInstaller(ListTicketViewmodel vm) async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Seleccionar Instalador',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: vm.installers.length,
+                  itemBuilder: (context, index) {
+                    final installer = vm.installers[index];
+                    return ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
+                      title: Text(installer.full_name),
+                      subtitle: Text(installer.email),
+                      onTap: () {
+                        vm.setSelectedInstaller(installer);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-  // Future<void> _selectCard() async {
-  //   final cards = context.read<CardViewModel>().cards;
-  //
-  //   final selected = await showModalBottomSheet<CardModel>(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     builder: (_) => SelectionBottomSheet<CardModel>(
-  //       title: 'Seleccionar tarjeta',
-  //       items: cards,
-  //       labelBuilder: (c) => c.name,
-  //       subtitleBuilder: (c) =>
-  //           Text('**** ${c.number.substring(c.number.length - 4)}'),
-  //     ),
-  //   );
-  //
-  //   if (selected != null) {
-  //     setState(() => _selectedCard = selected);
-  //   }
-  // }
-
-
+  Future<void> _selectUnit(ListTicketViewmodel vm) async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Seleccionar Unidad',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: vm.units.length,
+                  itemBuilder: (context, index) {
+                    final unit = vm.units[index];
+                    return ListTile(
+                      leading: const Icon(Icons.directions_car),
+                      title: Text(unit),
+                      onTap: () {
+                        vm.setSelectedUnit(unit);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

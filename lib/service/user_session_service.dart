@@ -26,6 +26,11 @@ class UserSession {
 
   bool get isMaster => _prefs?.getBool('isMaster') ?? false;
   set isMaster(bool value) => _prefs?.setBool('isMaster', value);
+
+  String get branchRoot => _prefs?.getString('branchRoot') ?? 'BUSMEN';
+  set branchRoot(String value) => _prefs?.setString('branchRoot', value);
+
+
   //
   // String? get email => _prefs?.getString('email');
   // set email(String? value) => _prefs?.setString('email', value ?? '');

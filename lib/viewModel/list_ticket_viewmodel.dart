@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../service/request_service.dart';
 import '../service/response_service.dart';
+import '../service/user_session_service.dart';
 
 enum TicketSortOption { dateDesc, dateAsc, status, unit }
 enum TicketFilterOption { active, cancelled }
@@ -98,6 +99,62 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController installerController = TextEditingController();
   TextEditingController unitController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
+
+  List<ApiResInstaller> _installers = [];
+  List<ApiResInstaller> get installers => _installers;
+
+  ApiResInstaller? _selectedInstaller;
+  ApiResInstaller? get selectedInstaller => _selectedInstaller;
+
+  void setSelectedInstaller(ApiResInstaller? installer) {
+    _selectedInstaller = installer;
+    if (installer != null) {
+      installerController.text = installer.full_name;
+    } else {
+      installerController.clear();
+    }
+    notifyListeners();
+  }
+
+  List<String> _units = [];
+  List<String> get units => _units;
+
+  String? _selectedUnit;
+  String? get selectedUnit => _selectedUnit;
+
+  void setSelectedUnit(String? unit) {
+    _selectedUnit = unit;
+    if (unit != null) {
+      unitController.text = unit;
+    } else {
+      unitController.clear();
+    }
+    notifyListeners();
+  }
+
+  Future<void> loadExternalUnits() async {
+    final serv = RequestServ.instance;
+    try {
+      final busmenUnits = await serv.fetchStatusDevice(isTemsa: false);
+      final temsaUnits = await serv.fetchStatusDevice(isTemsa: true);
+      
+      List<String> combinedUnits = [];
+      bool isBusmenUnit = UserSession().branchRoot == 'BUSMEN';
+
+      if (busmenUnits != null && isBusmenUnit ) {
+        combinedUnits.addAll((busmenUnits as List).map((u) => (u as UnitBusmen).name));
+      }
+      if (temsaUnits != null && !isBusmenUnit) {
+        combinedUnits.addAll((temsaUnits as List).map((u) => (u as UnitTemsa).name));
+      }
+      
+      _units = combinedUnits.toSet().toList(); // Unique
+      _units.sort();
+      notifyListeners();
+    } catch (e) {
+      print("[ ERR ] LOAD EXTERNAL UNITS: ${e.toString()}");
+    }
+  }
   // endregion BTN SHEET NEW TICKET VIEW
 
   String? get errorMessage => _errorMessage;
@@ -123,6 +180,13 @@ class ListTicketViewmodel extends ChangeNotifier {
       );
 
       _tickets = ticketsRecuperados ?? [];
+      
+      // Extraer unidades únicas de los tickets existentes inicialmente
+      if (_units.isEmpty) {
+        _units = _tickets.map((t) => t.unitId).toSet().toList();
+        _units.sort();
+      }
+      
     }catch(e){
       _errorMessage = e.toString();
     }finally{
@@ -137,11 +201,13 @@ class ListTicketViewmodel extends ChangeNotifier {
     installerController.clear();
     unitController.clear();
     descriptionController.clear();
+    _selectedInstaller = null;
+    _selectedUnit = null;
   }
 // endregion TICKET VIEW
 
 // region BTN SHEET NEW TICKET VIEW
-  Future<void> createTicket({required BuildContext context, bool isUpdate = false, String? idTicket}) async{
+  Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
 
     if (!formKey.currentState!.validate()) return;
 
@@ -165,7 +231,7 @@ class ListTicketViewmodel extends ChangeNotifier {
           "unitId": unitController.text,
           "company": companyController.text.toUpperCase(),
           "id": idTicket,
-          "createdAt": "2026-01-15T15:01:18.543Z",
+          "createdAt": DateTime.now().toIso8601String(),
           "evidences": [],
           "formsData": [],
           "history": []
@@ -180,7 +246,7 @@ class ListTicketViewmodel extends ChangeNotifier {
         "company": companyController.text.toUpperCase(),
       };
 
-
+      print("param => $param");
       ApiResTicket? ticket = await serv.handlingRequestParsed<ApiResTicket>(
         urlParam: url,
         params: param,
@@ -207,12 +273,30 @@ class ListTicketViewmodel extends ChangeNotifier {
   Future<void> getInstaller() async {
     final serv = RequestServ.instance;
     try{
-      final installer = await serv.handlingRequest(
+      List<ApiResInstaller>? installers = await serv.handlingRequestParsed<List<ApiResInstaller>>(
         urlParam: RequestServ.urlInstaller,
         method: "GET",
-        asJson: false,
+        asJson: true,
+        fromJson: (json) {
+          final list = json as List<dynamic>;
+          return list.map((item) => ApiResInstaller.fromJson(item)).toList();
+        },
       );
-      print("installer => ${installer}");
+
+      _installers = installers ?? [];
+      
+      // Auto-seleccionar si el nombre en el controller ya existe en la lista
+      if (installerController.text.isNotEmpty && _installers.isNotEmpty) {
+        try {
+          _selectedInstaller = _installers.firstWhere(
+            (element) => element.full_name.toLowerCase() == installerController.text.toLowerCase()
+          );
+        } catch (_) {
+          // No se encontró coincidencia exacta
+        }
+      }
+
+      notifyListeners();
 
     }catch(e){
       print("[ ERR ] GET INSTALLER: ${e.toString()}");
@@ -221,7 +305,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 // endregion GET INSTALLER
 
 // region BTN DELETE TICKET VIEW
-  Future<void> deleteTicket({required BuildContext context, String? idTicket}) async{
+  Future<void> deleteTicket({required BuildContext context, int? idTicket}) async{
 
     _isLoading = true;
     _errorMessage = null;

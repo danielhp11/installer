@@ -18,7 +18,11 @@ class _ListTicketViewState extends State<ListTicketView> {
   void initState() {
     super.initState();
     Future.microtask(() {
+      // Cargamos los tickets iniciales
       context.read<ListTicketViewmodel>().loadTickets();
+      
+      // Abrimos el diálogo de selección de empresa siempre al iniciar
+      _showBranchSelectionDialog(context);
     });
   }
 
@@ -35,6 +39,11 @@ class _ListTicketViewState extends State<ListTicketView> {
         title: const Text('Tickets'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.business_center_outlined),
+            tooltip: 'Cambiar Empresa',
+            onPressed: () => _showBranchSelectionDialog(context),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => viewModel.loadTickets(),
@@ -54,13 +63,102 @@ class _ListTicketViewState extends State<ListTicketView> {
     );
   }
 
+  void _showBranchSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Forzamos a que seleccione una opción si es la primera vez
+      builder: (BuildContext context) {
+        final currentBranch = UserSession().branchRoot;
+        
+        return AlertDialog(
+          title: const Text('Seleccionar Empresa', textAlign: TextAlign.center),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _branchOption(
+                context,
+                title: 'BUSMEN',
+                icon: Icons.directions_bus,
+                isSelected: currentBranch == 'BUSMEN',
+                onTap: () => _selectBranch(context, 'BUSMEN'),
+              ),
+              const SizedBox(height: 12),
+              _branchOption(
+                context,
+                title: 'TEMSA',
+                icon: Icons.local_shipping,
+                isSelected: currentBranch == 'TEMSA',
+                onTap: () => _selectBranch(context, 'TEMSA'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _branchOption(BuildContext context, {
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.grey[100],
+          border: Border.all(
+            color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600]),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Theme.of(context).primaryColor : Colors.black87,
+              ),
+            ),
+            const Spacer(),
+            if (isSelected)
+              Icon(Icons.check_circle, color: Theme.of(context).primaryColor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _selectBranch(BuildContext context, String branch) {
+    UserSession().branchRoot = branch;
+    Navigator.pop(context);
+    // Recargar tickets para la nueva rama seleccionada
+    context.read<ListTicketViewmodel>().loadTickets();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Empresa cambiada a $branch'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   Widget _buildFilters(ListTicketViewmodel vm) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search Bar
           SearchBar(
             hintText: 'Buscar por título, unidad o estatus...',
             leading: const Icon(Icons.search),
@@ -72,8 +170,6 @@ class _ListTicketViewState extends State<ListTicketView> {
             ),
           ),
           const SizedBox(height: 12),
-          
-          // Filter Segmented Button (Active vs Cancelled)
           SizedBox(
             width: double.infinity,
             child: SegmentedButton<TicketFilterOption>(
@@ -100,8 +196,6 @@ class _ListTicketViewState extends State<ListTicketView> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Sorting Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
