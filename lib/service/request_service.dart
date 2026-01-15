@@ -6,6 +6,9 @@ class RequestServ {
   static const String baseUrlNor = "http://172.16.2.147:8000/";
 
   static const String urlAuthentication = "auth/login";
+  static const String urlGetTickets = "tickets";
+
+
 
 
   // Singleton pattern
@@ -17,26 +20,27 @@ class RequestServ {
     Map<String, dynamic>? params,
     String method = "GET",
     bool asJson = false,
-    urlFull = false
+    urlFull = false,
   }) async {
     try {
-      // Decide base URL
-      // bool isNormUrl = urlParam == urlValidateUser ||
-      //     urlParam == urlGetRoute ||
-      //     urlParam == urlStopInRoute ||
-      //     urlParam == urlUnitAsiggned;
-
-      final base = baseUrlNor; //isNormUrl ? baseUrlNor : baseUrlAdm;
-      String fullUrl = urlFull? urlParam :base + urlParam;
+      final base = baseUrlNor;
+      String fullUrl = urlFull ? urlParam : base + urlParam;
 
       http.Response response;
-      // print("=> $fullUrl");
-      // Agregar parámetros para GET en query string
-      if (method.toUpperCase() == 'GET' && params != null && params.isNotEmpty) {
-        final uri = Uri.parse(fullUrl).replace(queryParameters: params);
+      print("url => $fullUrl");
+      print("params => $params");
+
+      if (method.toUpperCase() == 'GET') {
+        // Si es GET, arma la URL con o sin parámetros
+        Uri uri;
+        if (params != null && params.isNotEmpty) {
+          uri = Uri.parse(fullUrl).replace(queryParameters: params);
+        } else {
+          uri = Uri.parse(fullUrl);
+        }
         response = await http.get(uri).timeout(const Duration(seconds: 10));
       } else {
-        // Construir el body según asJson o form-url-encoded
+        // Para otros métodos, construye body y headers
         dynamic body;
         Map<String, String>? headers;
 
@@ -54,23 +58,19 @@ class RequestServ {
 
         switch (method.toUpperCase()) {
           case 'POST':
-            response = await http
-                .post(uri, body: body, headers: headers)
+            response = await http.post(uri, body: body, headers: headers)
                 .timeout(const Duration(seconds: 10));
             break;
           case 'PUT':
-            response = await http
-                .put(uri, body: body, headers: headers)
+            response = await http.put(uri, body: body, headers: headers)
                 .timeout(const Duration(seconds: 10));
             break;
           case 'PATCH':
-            response = await http
-                .patch(uri, body: body, headers: headers)
+            response = await http.patch(uri, body: body, headers: headers)
                 .timeout(const Duration(seconds: 10));
             break;
           case 'DELETE':
-            response = await http
-                .delete(uri, body: body, headers: headers)
+            response = await http.delete(uri, body: body, headers: headers)
                 .timeout(const Duration(seconds: 10));
             break;
           default:
@@ -82,6 +82,7 @@ class RequestServ {
         return response.body;
       } else {
         print("HTTP error: ${response.statusCode}");
+        print("response => ${response.headers}");
         return null;
       }
     } catch (e) {

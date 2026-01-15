@@ -26,6 +26,14 @@ class _LoginViewState extends State<LoginView> {
   Widget build(BuildContext context) {
     final viewModel = Provider.of<LoginViewModel>(context);
 
+    // @override
+    // void initState() {
+    //   super.initState();
+    //
+    //   viewModel.emailController.text = "master@geovoy.com";
+    //   viewModel.passwordController.text = "admin";
+    // }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Iniciar Sesión')),
       body: Stack(
