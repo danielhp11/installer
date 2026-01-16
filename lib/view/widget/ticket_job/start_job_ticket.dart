@@ -54,7 +54,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                 },
                 maxImages: 6,
               ),
-
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
                   print("Mandar evidencias de inicio");

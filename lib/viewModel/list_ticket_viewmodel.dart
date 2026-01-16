@@ -100,6 +100,7 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController unitController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
 
+  int installerId = 0;
   List<ApiResInstaller> _installers = [];
   List<ApiResInstaller> get installers => _installers;
 
@@ -110,8 +111,10 @@ class ListTicketViewmodel extends ChangeNotifier {
     _selectedInstaller = installer;
     if (installer != null) {
       installerController.text = installer.full_name;
+      installerId = installer.id;
     } else {
       installerController.clear();
+      installerId = 0;
     }
     notifyListeners();
   }
@@ -208,6 +211,7 @@ class ListTicketViewmodel extends ChangeNotifier {
     descriptionController.clear();
     _selectedInstaller = null;
     _selectedUnit = null;
+    installerId = 0;
   }
 // endregion TICKET VIEW
 
@@ -228,8 +232,14 @@ class ListTicketViewmodel extends ChangeNotifier {
     final serv = RequestServ.instance;
 
     try{
-      String url = isUpdate? "${RequestServ.urlGetTickets}/${idTicket}/status":"${RequestServ.urlGetTickets}/";
+      String url = isUpdate? "${RequestServ.urlGetTickets}/${idTicket}":"${RequestServ.urlGetTickets}/";
       String method = isUpdate? "PUT":"POST";
+
+  //     {
+  //   "technicianId": 5,
+  //   "modifierId": 12,
+  //   "updatedByName": "Nombre del Usuario que edita"
+  // }
 
       Map<String, dynamic> param = isUpdate?
         {
@@ -243,6 +253,9 @@ class ListTicketViewmodel extends ChangeNotifier {
           "company": companyController.text.toUpperCase(),
           "id": idTicket,
           "createdAt": DateTime.now().toIso8601String(),
+          "technicianId": installerId,
+          "modifierId": UserSession().idUser,
+          "updatedByName": UserSession().nameUser,
           "evidences": [],
           "formsData": [],
           "history": []
@@ -272,6 +285,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       Navigator.pop(context);
       _isLoading = false;
+      resetForm();
       notifyListeners();
 
     }catch(e){
@@ -342,5 +356,29 @@ class ListTicketViewmodel extends ChangeNotifier {
     }
   }
 // endregion BTN DELETE TICKET VIEW
+
+// region BTN SHEET START JOB TICKET VIEW
+  Future<void> sendEvidence({required BuildContext context, int? idTicket}) async{
+
+
+    final serv = RequestServ.instance;
+
+    try{
+      String url = "${RequestServ.urlSendStartJobEvidence}";
+
+      await serv.handlingRequest(
+        urlParam: url,
+        method: "DELETE",
+        asJson: true,
+      );
+
+      loadTickets();
+      _isLoading = false;
+      notifyListeners();
+    }catch(e){
+      print("[ ERROR ] DELETE TICKET ${e.toString()}");
+    }
+  }
+// endregion BTN SHEET START JOB TICKET VIEW
 
 }
