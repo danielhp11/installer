@@ -52,6 +52,9 @@ class LoginViewModel extends ChangeNotifier {
       isLogin = true;
       UserSession().isLogin = isLogin;
       UserSession().isMaster = auth.user_rol;
+      UserSession().nameUser = auth.name;
+      UserSession().idUser = auth.id;
+
       print(auth);
     }catch(e){
       print(e);

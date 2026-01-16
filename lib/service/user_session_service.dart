@@ -30,6 +30,12 @@ class UserSession {
   String get branchRoot => _prefs?.getString('branchRoot') ?? 'BUSMEN';
   set branchRoot(String value) => _prefs?.setString('branchRoot', value);
 
+  String get nameUser => _prefs?.getString('nameUser') ?? '';
+  set nameUser(String value) => _prefs?.setString('nameUser', value);
+
+  int get idUser => _prefs?.getInt('idUser') ?? 0;
+  set idUser(int value) => _prefs?.setInt('idUser', value);
+
 
   //
   // String? get email => _prefs?.getString('email');
@@ -100,5 +106,9 @@ class UserSession {
     // _prefs?.remove("userData");
     // _prefs?.remove("companyData");
     isLogin = false;
+    isMaster = false;
+    branchRoot = "BUSMEN";
+    nameUser = "";
+    idUser = 0;
   }
 }

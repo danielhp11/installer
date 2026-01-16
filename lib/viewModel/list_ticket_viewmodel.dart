@@ -132,14 +132,14 @@ class ListTicketViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadExternalUnits() async {
+  Future<void> loadExternalUnits(String nameCompany) async {
     final serv = RequestServ.instance;
     try {
       final busmenUnits = await serv.fetchStatusDevice(isTemsa: false);
       final temsaUnits = await serv.fetchStatusDevice(isTemsa: true);
       
       List<String> combinedUnits = [];
-      bool isBusmenUnit = UserSession().branchRoot == 'BUSMEN';
+      bool isBusmenUnit = nameCompany == 'BUSMEN'; //UserSession().branchRoot == 'BUSMEN';
 
       if (busmenUnits != null && isBusmenUnit ) {
         combinedUnits.addAll((busmenUnits as List).map((u) => (u as UnitBusmen).name));
@@ -156,6 +156,11 @@ class ListTicketViewmodel extends ChangeNotifier {
     }
   }
   // endregion BTN SHEET NEW TICKET VIEW
+
+  // region BTN SHEET START JOB TICKET VIEW
+  final formKeyStartJob = GlobalKey<FormState>();
+  List<String> evidencePhotos = [];
+  // endregion BTN SHEET START JOB TICKET VIEW
 
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -210,6 +215,12 @@ class ListTicketViewmodel extends ChangeNotifier {
   Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
 
     if (!formKey.currentState!.validate()) return;
+
+    print("installer => ${installerController.text.toUpperCase()}");
+    if (installerController.text.isEmpty) return;
+
+    print("unit => ${unitController.text.toUpperCase()}");
+    if (unitController.text.isEmpty) return;
 
     _isLoading = true;
     _errorMessage = null;

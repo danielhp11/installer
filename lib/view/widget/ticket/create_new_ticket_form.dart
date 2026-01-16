@@ -35,7 +35,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     vm.getInstaller();
     
     // Cargamos y combinamos unidades de Busmen y Temsa
-    await vm.loadExternalUnits();
+    await vm.loadExternalUnits(UserSession().branchRoot);
 
     if (widget.ticket != null) {
       // Editar: llenar con datos
@@ -89,9 +89,16 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
               _card(
                 child: Column(
                   children: [
-                    _textField(viewModel.companyController, 'Empresa', Icons.business),
+                    _branchField(viewModel),
                     const SizedBox(height: 16),
-                    _installerField(viewModel),
+                    UserSession().isMaster ?
+                    _installerField(viewModel):
+                    _textFieldOnlyRead(
+                        label: 'Instalador',
+                        icon: Icons.person_search_outlined,
+                        value: UserSession().nameUser,
+                        readOnly: true,
+                    ),
                     const SizedBox(height: 16),
                     _unitField(viewModel),
                     const SizedBox(height: 16),
@@ -164,6 +171,17 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
+  Widget _branchField(ListTicketViewmodel vm) {
+    return SelectorField(
+      label: 'Empresa',
+      icon: Icons.business,
+      value: vm.companyController.text.isEmpty ? null : vm.companyController.text,
+      onTap: () => {
+        _selectBranch(vm)
+      },
+    );
+  }
+
   Widget _installerField(ListTicketViewmodel vm) {
     return SelectorField(
       label: 'Instalador',
@@ -200,6 +218,54 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
   }
 
   // ================= LOGIC =================
+
+  Future<void> _selectBranch(ListTicketViewmodel vm) async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Seleccionar Empresa',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.directions_bus),
+                title: const Text('BUSMEN'),
+                trailing: vm.companyController.text == 'BUSMEN' ? const Icon(Icons.check_circle, color: Colors.green) : null,
+                onTap: () async {
+                  await vm.loadExternalUnits('BUSMEN');
+                  setState(() {
+                    vm.companyController.text = 'BUSMEN';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.local_shipping),
+                title: const Text('TEMSA'),
+                trailing: vm.companyController.text == 'TEMSA' ? const Icon(Icons.check_circle, color: Colors.green) : null,
+                onTap: () async {
+                  await vm.loadExternalUnits('TEMSA');
+                  setState(() {
+                    vm.companyController.text = 'TEMSA';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _selectInstaller(ListTicketViewmodel vm) async {
     showModalBottomSheet(
@@ -281,4 +347,30 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
       },
     );
   }
+
+  Widget _textFieldOnlyRead({
+    required String label,
+    required IconData icon,
+    required String value,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
+    return TextFormField(
+      controller: TextEditingController(text: value),
+      readOnly: readOnly,
+      onTap: onTap, // para manejar clicks si quieres
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: const OutlineInputBorder(),
+      ),
+      validator: (v) {
+        if (!readOnly && (v == null || v.isEmpty)) {
+          return 'Campo requerido';
+        }
+        return null;
+      },
+    );
+  }
+
 }

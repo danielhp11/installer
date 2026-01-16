@@ -29,6 +29,10 @@ class _ListTicketViewState extends State<ListTicketView> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ListTicketViewmodel>();
+    String company = UserSession().branchRoot;
+    String nameUser = UserSession().nameUser;
+    String nameType = UserSession().isMaster ? 'Master' : 'Instalador';
+
 
     return Scaffold(
       appBar: AppBar(
@@ -36,7 +40,18 @@ class _ListTicketViewState extends State<ListTicketView> {
           icon: const Icon(Icons.exit_to_app),
           onPressed: () => _showConfirmationDialog(context),
         ),
-        title: const Text('Tickets'),
+        title: Column(
+          children: [
+
+            Text('Tickets - $company'),
+            Text('[ $nameType ] - $nameUser',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontFamily: 'Raleway',
+                )
+            ),
+          ],
+        ),
         centerTitle: true,
         actions: [
           IconButton(

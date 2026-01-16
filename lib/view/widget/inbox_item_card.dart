@@ -128,13 +128,13 @@ class InboxItemCard extends StatelessWidget {
                       Spacer(),
                       _iconOption(
                         icon: Icons.brunch_dining_rounded,
-                        onPressed: () => print("=> Init job"),
-                        visible: !UserSession().isMaster && item.status != statusClosed,
+                        onPressed: () => showStarJobFormBottomSheet(context, item),
+                        visible: !UserSession().isMaster && item.status != statusClosed && item.status == statusOpen,
                       ),
                       _iconOption(
                         icon: Icons.pin_end_sharp,
-                        onPressed: () =>print("=> closed job"),
-                        visible: !UserSession().isMaster && item.status != statusClosed,
+                        onPressed: () => showCloseJobFormBottomSheet(context, item),
+                        visible: !UserSession().isMaster && item.status != statusClosed && item.status == statusProcess,
                       ),
                       _iconOption(
                         icon: Icons.security_update_outlined,
