@@ -9,6 +9,7 @@ class RequestServ {
   static const String urlAuthentication = "auth/login";
   static const String urlGetTickets = "tickets";
   static const String urlInstaller = "users/?all=false";
+  static const String urlSendStartJobEvidence = "tickets/upload";
 
   static const String _apiUser = 'apinstaladores@geovoy.com';
   static const String _apiPass = 'Instaladores*9';
