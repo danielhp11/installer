@@ -44,10 +44,11 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         vm.installerController.text = widget.ticket!.technicianName;
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
-        
+        print("Update => ${widget.ticket!.unitId}");
+        vm.installerId = int.parse(widget.ticket!.unitId);
         // Intentar auto-seleccionar la unidad si ya existe en la lista
         if (vm.units.contains(widget.ticket!.unitId)) {
-          vm.setSelectedUnit(widget.ticket!.unitId);
+          vm.setSelectedUnit(unit : widget.ticket!.unitId);
         }
         setState(() {
           isUpdate = true;
@@ -334,7 +335,8 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                       leading: const Icon(Icons.directions_car),
                       title: Text(unit),
                       onTap: () {
-                        vm.setSelectedUnit(unit);
+                        print(unit);
+                        vm.setSelectedUnit(unit: unit, index: index);
                         Navigator.pop(context);
                       },
                     );

@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../service/request_service.dart';
 import '../service/response_service.dart';
@@ -100,6 +103,10 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController unitController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
 
+  // Cambiado a dynamic para guardar objetos completos y evitar error de subtipo
+  List<dynamic> localUnitBusmen = [];
+  List<dynamic> localUnitTemsa = [];
+
   int installerId = 0;
   List<ApiResInstaller> _installers = [];
   List<ApiResInstaller> get installers => _installers;
@@ -124,13 +131,25 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   String? _selectedUnit;
   String? get selectedUnit => _selectedUnit;
+  int? selectedUnitId; // ID de la unidad seleccionada
 
-  void setSelectedUnit(String? unit) {
+  void setSelectedUnit({String? unit, int? index}) {
     _selectedUnit = unit;
+
+    // Solo buscamos el ID si el índice es válido
+    if (unit != null && index != null && index >= 0) {
+      List<dynamic> currentList = UserSession().branchRoot == "BUSMEN" ? localUnitBusmen : localUnitTemsa;
+      if (index < currentList.length) {
+        selectedUnitId = currentList[index].id;
+        print("Unidad seleccionada ID: $selectedUnitId");
+      }
+    }
+
     if (unit != null) {
       unitController.text = unit;
     } else {
       unitController.clear();
+      selectedUnitId = null;
     }
     notifyListeners();
   }
@@ -138,20 +157,25 @@ class ListTicketViewmodel extends ChangeNotifier {
   Future<void> loadExternalUnits(String nameCompany) async {
     final serv = RequestServ.instance;
     try {
-      final busmenUnits = await serv.fetchStatusDevice(isTemsa: false);
+      final busmenUnits =  await serv.fetchStatusDevice(isTemsa: false);
       final temsaUnits = await serv.fetchStatusDevice(isTemsa: true);
-      
-      List<String> combinedUnits = [];
-      bool isBusmenUnit = nameCompany == 'BUSMEN'; //UserSession().branchRoot == 'BUSMEN';
+
+      List<String> combinedNames = [];
+      bool isBusmenUnit = nameCompany == 'BUSMEN';
 
       if (busmenUnits != null && isBusmenUnit ) {
-        combinedUnits.addAll((busmenUnits as List).map((u) => (u as UnitBusmen).name));
+        // Ordenamos objetos para que coincidan con la lista de nombres
+        busmenUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
+        localUnitBusmen = busmenUnits as List<dynamic>;
+        combinedNames.addAll(localUnitBusmen.map((u) => u.name.toString()));
       }
       if (temsaUnits != null && !isBusmenUnit) {
-        combinedUnits.addAll((temsaUnits as List).map((u) => (u as UnitTemsa).name));
+        temsaUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
+        localUnitTemsa = temsaUnits as List<dynamic>;
+        combinedNames.addAll(localUnitTemsa.map((u) => u.name.toString()));
       }
-      
-      _units = combinedUnits.toSet().toList(); // Unique
+
+      _units = combinedNames.toSet().toList(); // Unique
       _units.sort();
       notifyListeners();
     } catch (e) {
@@ -162,7 +186,13 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   // region BTN SHEET START JOB TICKET VIEW
   final formKeyStartJob = GlobalKey<FormState>();
+  TextEditingController descriptionStartController = TextEditingController();
   List<String> evidencePhotos = [];
+
+  void resetEvidence() {
+    evidencePhotos = [];
+    notifyListeners();
+  }
   // endregion BTN SHEET START JOB TICKET VIEW
 
   String? get errorMessage => _errorMessage;
@@ -211,6 +241,7 @@ class ListTicketViewmodel extends ChangeNotifier {
     descriptionController.clear();
     _selectedInstaller = null;
     _selectedUnit = null;
+    selectedUnitId = null;
     installerId = 0;
   }
 // endregion TICKET VIEW
@@ -235,12 +266,6 @@ class ListTicketViewmodel extends ChangeNotifier {
       String url = isUpdate? "${RequestServ.urlGetTickets}/${idTicket}":"${RequestServ.urlGetTickets}/";
       String method = isUpdate? "PUT":"POST";
 
-  //     {
-  //   "technicianId": 5,
-  //   "modifierId": 12,
-  //   "updatedByName": "Nombre del Usuario que edita"
-  // }
-
       Map<String, dynamic> param = isUpdate?
         {
           "title": "",
@@ -249,7 +274,7 @@ class ListTicketViewmodel extends ChangeNotifier {
           "category": "",
           "status": "ABIERTO",
           "technicianName": installerController.text,
-          "unitId": unitController.text,
+          "unitId": selectedUnitId.toString(),
           "company": companyController.text.toUpperCase(),
           "id": idTicket,
           "createdAt": DateTime.now().toIso8601String(),
@@ -265,8 +290,9 @@ class ListTicketViewmodel extends ChangeNotifier {
         "priority": "",
         "category": "",
         "status": "ABIERTO",
+        "technicianId": installerId,
         "technicianName": installerController.text,
-        "unitId": unitController.text,
+        "unitId": selectedUnitId.toString(),
         "company": companyController.text.toUpperCase(),
       };
 
@@ -337,16 +363,109 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     Navigator.of(context).pop();
 
+
+    try{
+
+      bool isSuccessful = await deleteTicketTest(
+        ticketId : idTicket!,
+        modifierId: UserSession().idUser,
+        updatedByName : UserSession().nameUser,
+      );
+
+      if(isSuccessful){
+        loadTickets();
+        _isLoading = false;
+        notifyListeners();
+      }
+
+
+    }catch(e){
+      print("[ ERROR ] DELETE TICKET ${e.toString()}");
+    }
+  }
+
+  Future<bool> deleteTicketTest({
+    required int ticketId,
+    required int modifierId,
+    required String updatedByName,
+  }) async {
+
+    String url_new = "${RequestServ.baseUrlNor}${RequestServ.urlGetTickets}/$ticketId";
+
+    final Uri url = Uri.parse(url_new).replace(
+      queryParameters: {
+        'modifier_id': modifierId.toString(),
+        'updatedByName': updatedByName,
+      },
+    );
+
+    try {
+      final response = await http.delete(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Eliminado correctamente
+        return true;
+      } else {
+        print('Error al eliminar ticket');
+        print('Status: ${response.statusCode}');
+        print('Body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Exception deleteTicket: $e');
+      return false;
+    }
+  }
+// endregion BTN DELETE TICKET VIEW
+
+// region BTN SHEET START JOB TICKET VIEW
+  Future<void> sendEvidence({required BuildContext context, int? idTicket}) async{
+
+    if (!formKeyStartJob.currentState!.validate()) return;
+
+    if( evidencePhotos.isEmpty ) return;
+
     final serv = RequestServ.instance;
 
     try{
-      String url = "${RequestServ.urlGetTickets}/$idTicket";
+
+      // region CAMBIAR ESTATUS
+      String url = "${RequestServ.urlGetTickets}/$idTicket/status";
 
       await serv.handlingRequest(
         urlParam: url,
-        method: "DELETE",
+        params: {
+          "status": "PROCESO",
+          "changedBy": UserSession().idUser
+        },
+        method: "PUT",
         asJson: true,
       );
+
+      // endregion CAMBIAR ESTATUS
+
+      // region SUBIR FOTO
+
+      evidencePhotos.asMap().forEach((index, photo){
+        print("ticket id: $idTicket | phase: PROCESO | sequence: ${index+1} | photo: $photo");
+        uploadPhoto(photo);
+      });
+      // endregion SUBIR FOTO
+
+      // region LIGAR FOTO
+      evidencePhotos.asMap().forEach((index, photo){
+        registerEvidence( idTicket.toString(), photo, "PROCESO", index+1 );
+      });
+      // endregion LIGAR FOTO
+
+      // region ENVIAR FORMULARIO
+      // endregion ENVIAR FORMULARIO
 
       loadTickets();
       _isLoading = false;
@@ -355,28 +474,38 @@ class ListTicketViewmodel extends ChangeNotifier {
       print("[ ERROR ] DELETE TICKET ${e.toString()}");
     }
   }
-// endregion BTN DELETE TICKET VIEW
 
-// region BTN SHEET START JOB TICKET VIEW
-  Future<void> sendEvidence({required BuildContext context, int? idTicket}) async{
+  Future<String> uploadPhoto(String filePath) async {
+    final request = http.MultipartRequest('POST', Uri.parse('${RequestServ.baseUrlNor}/tickets/upload'));
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
 
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = json.decode(response.body);
+      return data['imageUrl']; // Assuming API returns {"imageUrl": "/uploads/..."}
+    } else {
+      throw Exception('Failed to upload photo: ${response.body}');
+    }
+  }
+
+  Future<void> registerEvidence(String ticketId, String imageUrl, String phase, int sequence) async {
     final serv = RequestServ.instance;
-
-    try{
-      String url = "${RequestServ.urlSendStartJobEvidence}";
-
+    try {
       await serv.handlingRequest(
-        urlParam: url,
-        method: "DELETE",
+        urlParam: 'evidences',
+        method: 'POST',
         asJson: true,
+        params: {
+          'ticketId': int.parse(ticketId),
+          'imageUrl': imageUrl,
+          'phase': phase,
+          'sequence': sequence,
+        },
       );
-
-      loadTickets();
-      _isLoading = false;
-      notifyListeners();
-    }catch(e){
-      print("[ ERROR ] DELETE TICKET ${e.toString()}");
+    } catch (e) {
+      print("[ ERR ] REGISTER EVIDENCE: ${e.toString()}");
     }
   }
 // endregion BTN SHEET START JOB TICKET VIEW

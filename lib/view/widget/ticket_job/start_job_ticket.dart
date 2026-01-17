@@ -19,6 +19,15 @@ class StartJobTicket extends StatefulWidget {
 class _StartJobTicket extends State<StartJobTicket> {
 
   @override
+  void initState() {
+    super.initState();
+    // Limpiamos las evidencias previas al iniciar la vista
+    Future.microtask(() {
+      context.read<ListTicketViewmodel>().resetEvidence();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
 
     final viewModel = context.watch<ListTicketViewmodel>();
@@ -39,11 +48,13 @@ class _StartJobTicket extends State<StartJobTicket> {
             children: [
               _header(),
               const SizedBox(height: 16),
-              _textField( label: 'Empresa', icon: Icons.business, value: UserSession().branchRoot, readOnly: true ),
+              _textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: UserSession().branchRoot, readOnly: true ),
               const SizedBox(height: 16),
-              _textField( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
+              _textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
               const SizedBox(height: 16),
-              _textField( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true ),
+              _textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true ),
+              const SizedBox(height: 16),
+              _textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
               const SizedBox(height: 16),
               EvidenceGrid(
                 images: viewModel.evidencePhotos,
@@ -57,7 +68,7 @@ class _StartJobTicket extends State<StartJobTicket> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  print("Mandar evidencias de inicio");
+                  viewModel.sendEvidence(context: context, idTicket: widget.ticket.id);
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -65,9 +76,9 @@ class _StartJobTicket extends State<StartJobTicket> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: Text(
+                child: const Text(
                   'Enviar',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               )
             ],
@@ -93,7 +104,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     );
   }
 
-  Widget _textField({
+  Widget _textFieldOnlyRead({
     required String label,
     required IconData icon,
     required String value,
@@ -103,7 +114,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     return TextFormField(
       controller: TextEditingController(text: value),
       readOnly: readOnly,
-      onTap: onTap, // para manejar clicks si quieres
+      onTap: onTap, 
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
@@ -118,5 +129,21 @@ class _StartJobTicket extends State<StartJobTicket> {
     );
   }
 
+  Widget _textField(
+      TextEditingController c, String label, IconData icon) {
+    return TextFormField(
+      controller: c,
+      keyboardType: TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: const OutlineInputBorder(),
+      ),
+      validator: (v) {
+        if (v == null || v.isEmpty) return 'Campo requerido';
+        return null;
+      },
+    );
+  }
 
 }
