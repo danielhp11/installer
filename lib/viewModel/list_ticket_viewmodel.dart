@@ -28,11 +28,17 @@ class ListTicketViewmodel extends ChangeNotifier {
   List<ApiResTicket> get tickets {
     // Obtenemos la compañía seleccionada actualmente de la sesión
     final String currentBranch = UserSession().branchRoot.toUpperCase().trim();
+    final String currentUserName = UserSession().nameUser;
 
     List<ApiResTicket> filtered = _tickets.where((ticket) {
       // 1. Filtrar por compañía seleccionada (Solo mostrar tickets de la empresa actual)
       final String ticketCompany = (ticket.company ?? '').toUpperCase().trim();
       if (ticketCompany != currentBranch) {
+        return false;
+      }
+
+      // 2. Si no es Master, solo mostrar tickets asignados a este técnico
+      if (!UserSession().isMaster && ticket.technicianName != currentUserName) {
         return false;
       }
 
@@ -281,11 +287,25 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       // Actualizar la lista de unidades únicas filtradas por la compañía actual
       final String currentBranch = UserSession().branchRoot.toUpperCase().trim();
+      
+      // Lista base de unidades filtrada por empresa
       _units = _tickets
           .where((t) => (t.company ?? '').toUpperCase().trim() == currentBranch)
           .map((t) => t.unitId)
           .toSet()
           .toList();
+      
+      // Si no es Master, filtrar unidades solo de SUS tickets asignados
+      if( !UserSession().isMaster ){
+        _units = _tickets
+            .where((t) => 
+                (t.company ?? '').toUpperCase().trim() == currentBranch && 
+                t.technicianName == UserSession().nameUser)
+            .map((t) => t.unitId)
+            .toSet()
+            .toList();
+      }
+
       _units.sort();
 
     }catch(e){
@@ -418,7 +438,7 @@ class ListTicketViewmodel extends ChangeNotifier {
   // endregion GET INSTALLER
 
   // region BTN DELETE TICKET VIEW
-    Future<void> deleteTicket({required BuildContext context, int? idTicket}) async{
+    Future<void> deleteTicket({required BuildContext context, int? idTicket, String? reason}) async{
 
       _isLoading = true;
       _errorMessage = null;
@@ -432,6 +452,7 @@ class ListTicketViewmodel extends ChangeNotifier {
           ticketId : idTicket!,
           modifierId: UserSession().idUser.toString(),
           updatedByName : UserSession().nameUser,
+          reason: reason,
         );
 
         if(isSuccessful){
@@ -450,6 +471,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       required int ticketId,
       required String modifierId,
       required String updatedByName,
+      String? reason,
     }) async {
 
       String url_new = "${RequestServ.baseUrlNor}${RequestServ.urlGetTickets}/$ticketId";
@@ -458,6 +480,7 @@ class ListTicketViewmodel extends ChangeNotifier {
         queryParameters: {
           'modifier_id': modifierId.toString(),
           'updatedByName': updatedByName,
+          if (reason != null && reason.isNotEmpty) 'cancellation_reason': reason,
         },
       );
 

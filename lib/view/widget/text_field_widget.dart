@@ -43,13 +43,18 @@ Widget textField(
   );
 }
 
-Widget infoText(String text) {
+TextStyle defaultStyleText = TextStyle(
+  fontSize: 12,
+  color: Colors.grey.shade600,
+  fontWeight: FontWeight.w500,
+);
+
+Widget infoText({
+  String text = "",
+  TextStyle? styles,
+}) {
   return Text(
     text,
-    style: TextStyle(
-      fontSize: 12,
-      color: Colors.grey.shade600,
-      fontWeight: FontWeight.w500,
-    ),
+    style: styles ?? defaultStyleText,
   );
 }

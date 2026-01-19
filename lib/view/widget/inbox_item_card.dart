@@ -97,7 +97,7 @@ class InboxItemCard extends StatelessWidget {
                 /// 🔹 SUBINFO
                 Row(
                   children: [
-                    infoText("Ticket #${item.id}"),
+                    infoText(text: "Ticket #${item.id}"),
                     const Spacer(),
                     Icon(Icons.person, size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
@@ -116,11 +116,11 @@ class InboxItemCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    infoText("Empresa: ${item.company}"),
+                    infoText(text: "Empresa: ${item.company}"),
                     const SizedBox(height: 16),
-                    infoText("Descripción:\n${item.description}"),
+                    infoText(text: "Descripción:\n${item.description}"),
                     const SizedBox(height: 16),
-                    isCancel? infoText("${item.history?.last.notes}"):SizedBox.shrink(),
+                    isCancel? infoText(text: "${item.history?.last.notes}"):SizedBox.shrink(),
                   ],
                 ),
 
@@ -158,9 +158,10 @@ class InboxItemCard extends StatelessWidget {
                           item.status == statusOpen,
                       onTap: () => _showConfirmationDialog(
                         context,
-                            () => viewModel.deleteTicket(
+                        (reason) => viewModel.deleteTicket(
                           context: context,
                           idTicket: item.id,
+                          reason: reason,
                         ),
                       ),
                     ),
@@ -262,15 +263,32 @@ class InboxItemCard extends StatelessWidget {
 
   void _showConfirmationDialog(
       BuildContext context,
-      VoidCallback onConfirm,
+      Function(String) onConfirm,
       ) {
+    final TextEditingController reasonController = TextEditingController();
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('¡Eliminar!'),
-          content: const Text('¿Deseas eliminar permanentemente?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('¿Deseas eliminar permanentemente?'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Motivo de cancelación',
+                  hintText: 'Escribe aquí el motivo (mín. 5 caract.)...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancelar'),
@@ -278,10 +296,23 @@ class InboxItemCard extends StatelessWidget {
                 Navigator.of(context).pop();
               },
             ),
-            TextButton(
-              child: const Text('Aceptar'),
-              onPressed: () {
-                onConfirm();
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: reasonController,
+              builder: (context, value, child) {
+                final bool isValid = value.text.trim().length >= 5;
+                return TextButton(
+                  onPressed: isValid
+                      ? () {
+                    onConfirm(reasonController.text.trim());
+                  }
+                      : null,
+                  child: Text(
+                    'Aceptar',
+                    style: TextStyle(
+                      color: isValid ? Colors.redAccent : Colors.grey,
+                    ),
+                  ),
+                );
               },
             ),
           ],

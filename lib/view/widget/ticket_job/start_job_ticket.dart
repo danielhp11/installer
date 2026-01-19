@@ -57,7 +57,24 @@ class _StartJobTicket extends State<StartJobTicket> {
               const SizedBox(height: 10),
               textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
               const SizedBox(height: 10),
-              infoText("[${viewModel.evidencePhotos.length}/6] mínimo 1."),
+              _card(
+                child: Column(
+                    children: [
+                      infoText(text: "Lectoras"),
+                      const SizedBox(height: 10),
+                      infoText(text: "Botón de pánico")
+                    ],
+                )
+              ),
+              const SizedBox(height: 10),
+              infoText(
+                  text: viewModel.evidencePhotos.length > 0? "[${viewModel.evidencePhotos.length}/6]":"[${viewModel.evidencePhotos.length}/6] mínimo 1.",
+                  styles: TextStyle(
+                    fontSize: 14,
+                    color: viewModel.evidencePhotos.length > 0? Colors.green.shade600: Colors.red.shade600,
+                    fontWeight: FontWeight.w500,
+                  )
+              ),
               const SizedBox(height: 3),
               EvidenceGrid(
                 images: viewModel.evidencePhotos,
@@ -104,6 +121,20 @@ class _StartJobTicket extends State<StartJobTicket> {
           onPressed: () => Navigator.pop(context),
         )
       ],
+    );
+  }
+
+  Widget _card({required Widget child}) {
+    return Card(
+      elevation: 1.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: child,
+      ),
     );
   }
 

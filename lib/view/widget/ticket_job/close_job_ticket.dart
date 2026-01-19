@@ -58,7 +58,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                 textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
                 const SizedBox(height: 16),
                 const SizedBox(height: 10),
-                infoText("[${viewModel.evidenceClosePhotos.length}/6]  mínimo 1."),
+                infoText(text: "[${viewModel.evidenceClosePhotos.length}/6]  mínimo 1."),
                 EvidenceGrid(
                   images: viewModel.evidenceClosePhotos,
                   onImagesChanged: (images) {

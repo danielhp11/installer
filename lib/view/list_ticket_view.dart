@@ -71,17 +71,20 @@ class _ListTicketViewState extends State<ListTicketView> {
           Expanded(child: _buildBody(viewModel)),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showFuelFormBottomSheet(context, null),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: Padding(
+          padding: const EdgeInsetsGeometry.only(right: 16, bottom: 35),
+        child: FloatingActionButton(
+          onPressed: () => showFuelFormBottomSheet(context, null),
+          child: const Icon(Icons.add),
+        ),
+      )
     );
   }
 
   void _showBranchSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Forzamos a que seleccione una opción si es la primera vez
+      barrierDismissible: false,
       builder: (BuildContext context) {
         final currentBranch = UserSession().branchRoot;
         
