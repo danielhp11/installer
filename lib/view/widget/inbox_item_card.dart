@@ -17,6 +17,7 @@ class InboxItemCard extends StatelessWidget {
   static const String statusPendingValidation = "PENDIENTE_VALIDACION";
   static const String statusFinished = "FINALIZADO";
   static const String statusClosed = "CERRADO";
+  static const String statusCancel = "CANCELADO";
 
 
 
@@ -29,7 +30,9 @@ class InboxItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isClosed = item.status == "CERRADO";
+    final bool isCancel = item.status == "CANCELADO";
     final viewModel = context.watch<ListTicketViewmodel>();
+    print("=> InboxItemCard: ${item.history?.last.notes}");
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -38,7 +41,7 @@ class InboxItemCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: isClosed
               ? [_getBackgroundColor(), Colors.grey.shade100]
-              : [_getBackgroundColor(), Colors.white], // AQUI CAMBIAR DE COLOR
+              : [_getBackgroundColor(), Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -117,6 +120,8 @@ class InboxItemCard extends StatelessWidget {
                     infoText("Empresa: ${item.company}"),
                     const SizedBox(height: 16),
                     infoText("Descripción:\n${item.description}"),
+                    const SizedBox(height: 16),
+                    isCancel? infoText("${item.history?.last.notes}"):SizedBox.shrink(),
                   ],
                 ),
 
@@ -229,6 +234,9 @@ class InboxItemCard extends StatelessWidget {
       case statusClosed:
         return Colors.lightGreen.shade700;
 
+      case statusCancel:
+        return Colors.grey.shade700;
+
       default:
         return Colors.blue.shade700;
     }
@@ -243,7 +251,10 @@ class InboxItemCard extends StatelessWidget {
         return Colors.deepPurple.shade50;
 
       case statusClosed:
-        return Colors.lightGreen.shade100;
+        return Colors.lightGreen.shade50;
+
+      case statusCancel:
+        return Colors.grey.shade50;
 
       default:
         return Colors.blue.shade50;
