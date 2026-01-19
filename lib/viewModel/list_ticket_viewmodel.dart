@@ -193,7 +193,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   void resetEvidenceStart() {
     evidencePhotos = [];
-    descriptionStartController.clear(); // Limpia el texto para evitar que aparezca en la siguiente apertura
+    descriptionStartController.clear();
     notifyListeners();
   }
   // endregion BTN SHEET START JOB TICKET VIEW
@@ -208,7 +208,7 @@ class ListTicketViewmodel extends ChangeNotifier {
     descriptionCloseController.clear();
     notifyListeners();
   }
-  // region BTN SHEET CLOSE JOB TICKET VIEW
+  // endregion BTN SHEET CLOSE JOB TICKET VIEW
 
   // region TICKET VIEW
   Future<void> loadTickets()async{
@@ -232,6 +232,8 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       // Extraer unidades únicas de los tickets existentes inicialmente
       if (_units.isEmpty) {
+        print("company select ${UserSession().branchRoot} | ${_tickets[0].company}");
+
         _units = _tickets.map((t) => t.unitId).toSet().toList();
         _units.sort();
       }
@@ -262,10 +264,8 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       if (!formKey.currentState!.validate()) return;
 
-      print("installer => ${installerController.text.toUpperCase()}");
       if (installerController.text.isEmpty) return;
 
-      print("unit => ${unitController.text.toUpperCase()}");
       if (unitController.text.isEmpty) return;
 
       _isLoading = true;
@@ -490,94 +490,10 @@ class ListTicketViewmodel extends ChangeNotifier {
       }
     }
 
-    // 1.
-    Future<void> updateStatus(String ticketId, String status, String changedBy) async {
-      print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/status");
-      final response = await http.put(
-        Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/status'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'status': status,
-          'changedBy': changedBy,
-        }),
-      );
-      print("=> param ${
-          {
-            'status': status,
-            'changedBy': changedBy,
-          }
-      }");
-      print(response.headers);
-    }
 
-    // 2.
-    Future<String?> uploadPhoto(String filePath) async {
-      print("url => ${RequestServ.baseUrlNor}tickets/upload");
-      print("file => ${filePath}");
-      try {
-        final request = http.MultipartRequest('POST', Uri.parse('${RequestServ.baseUrlNor}tickets/upload'));
-        request.files.add(await http.MultipartFile.fromPath('file', filePath));
-
-        final streamedResponse = await request.send();
-        final response = await http.Response.fromStream(streamedResponse);
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          final data = json.decode(response.body);
-          return data['imageUrl']?.toString();
-        } else {
-          print("Upload failed: ${response.statusCode}");
-          return null;
-        }
-      } catch (e) {
-        print("Error uploading: $e");
-        return null;
-      }
-    }
-
-    // 3.
-    Future<void> registerEvidence(String ticketId, String imageUrl, String phase, int sequence) async {
-      print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/evidence");
-      print("${
-          {
-            'imageUrl': imageUrl,
-            'phase': phase,
-            'sequence': sequence,
-          }
-      }");
-      final response = await http.post(
-        Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/evidence'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'imageUrl': imageUrl,
-          'phase': phase,
-          'sequence': sequence,
-        }),
-      );
-      print(response);
-    }
-
-    // 4.
-    Future<void> sendFormData(String ticketId, String formType, Map<String, dynamic> data) async {
-      print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/form-data");
-      print("${
-          {
-            'formType': formType,
-            'data': data,
-          }
-      }");
-      final response = await http.post(
-        Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/form-data'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'formType': formType,
-          'data': data,
-        }),
-      );
-      print(response);
-    }
   // endregion BTN SHEET START JOB TICKET VIEW
 
-// region BTN SHEET CLOSE JOB TICKET VIEW
+  // region BTN SHEET CLOSE JOB TICKET VIEW
   Future<void> sendEvidenceClose({required BuildContext context, int? idTicket, ApiResTicket? ticket}) async{
 
     if (!formKeyCloseJob.currentState!.validate()) return;
@@ -631,6 +547,92 @@ class ListTicketViewmodel extends ChangeNotifier {
       print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
     }
   }
-// region BTN SHEET CLOSE JOB TICKET VIEW
+  // endregion BTN SHEET CLOSE JOB TICKET VIEW
+
+  // 1.
+  Future<void> updateStatus(String ticketId, String status, String changedBy) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/status");
+    final response = await http.put(
+      Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/status'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'status': status,
+        'changedBy': changedBy,
+      }),
+    );
+    // print("=> param ${
+    //     {
+    //       'status': status,
+    //       'changedBy': changedBy,
+    //     }
+    // }");
+    print(response.headers);
+  }
+
+  // 2.
+  Future<String?> uploadPhoto(String filePath) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/upload");
+    // print("file => ${filePath}");
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('${RequestServ.baseUrlNor}tickets/upload'));
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data['imageUrl']?.toString();
+      } else {
+        // print("Upload failed: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      // print("Error uploading: $e");
+      return null;
+    }
+  }
+
+  // 3.
+  Future<void> registerEvidence(String ticketId, String imageUrl, String phase, int sequence) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/evidence");
+    // print("${
+    //     {
+    //       'imageUrl': imageUrl,
+    //       'phase': phase,
+    //       'sequence': sequence,
+    //     }
+    // }");
+    final response = await http.post(
+      Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/evidence'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'imageUrl': imageUrl,
+        'phase': phase,
+        'sequence': sequence,
+      }),
+    );
+    // print(response);
+  }
+
+  // 4.
+  Future<void> sendFormData(String ticketId, String formType, Map<String, dynamic> data) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/form-data");
+    // print("${
+    //     {
+    //       'formType': formType,
+    //       'data': data,
+    //     }
+    // }");
+    final response = await http.post(
+      Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/form-data'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'formType': formType,
+        'data': data,
+      }),
+    );
+    // print(response);
+  }
 
 }

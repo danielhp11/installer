@@ -7,6 +7,7 @@ import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
 import '../selector_field.dart';
+import '../text_field_widget.dart';
 
 class CreateNewTicketForm extends StatefulWidget {
 
@@ -95,7 +96,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                     const SizedBox(height: 16),
                     UserSession().isMaster ?
                     _installerField(viewModel):
-                    _textFieldOnlyRead(
+                    textFieldOnlyRead(
                         label: 'Instalador',
                         icon: Icons.person_search_outlined,
                         value: UserSession().nameUser,
@@ -104,7 +105,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                     const SizedBox(height: 16),
                     _unitField(viewModel),
                     const SizedBox(height: 16),
-                    _textField(viewModel.descriptionController, 'Descripcion', Icons.text_snippet_outlined),
+                    textField(viewModel.descriptionController, 'Descripcion', Icons.text_snippet_outlined),
                   ],
                 ),
               ),
@@ -202,22 +203,6 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-  Widget _textField(
-      TextEditingController c, String label, IconData icon) {
-    return TextFormField(
-      controller: c,
-      keyboardType: TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'Campo requerido';
-        return null;
-      },
-    );
-  }
 
   // ================= LOGIC =================
 
@@ -351,29 +336,5 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-  Widget _textFieldOnlyRead({
-    required String label,
-    required IconData icon,
-    required String value,
-    bool readOnly = false,
-    VoidCallback? onTap,
-  }) {
-    return TextFormField(
-      controller: TextEditingController(text: value),
-      readOnly: readOnly,
-      onTap: onTap, // para manejar clicks si quieres
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (v) {
-        if (!readOnly && (v == null || v.isEmpty)) {
-          return 'Campo requerido';
-        }
-        return null;
-      },
-    );
-  }
 
 }

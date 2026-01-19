@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
 import '../evidence_grid.dart';
+import '../text_field_widget.dart';
 
 class CloseJobTicket extends StatefulWidget {
 
@@ -48,13 +49,13 @@ class _CloseJobTicket extends State<CloseJobTicket> {
               children: [
                 _header(),
                 const SizedBox(height: 16),
-                _textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company!, readOnly: true ),
+                textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company!, readOnly: true ),
                 const SizedBox(height: 16),
-                _textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
+                textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
                 const SizedBox(height: 16),
-                _textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true, ),
+                textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true, ),
                 const SizedBox(height: 16),
-                _textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
+                textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
                 const SizedBox(height: 16),
                 EvidenceGrid(
                   images: viewModel.evidenceClosePhotos,
@@ -104,46 +105,5 @@ class _CloseJobTicket extends State<CloseJobTicket> {
     );
   }
 
-  Widget _textFieldOnlyRead({
-    required String label,
-    required IconData icon,
-    required String value,
-    bool readOnly = false,
-    VoidCallback? onTap,
-  }) {
-    return TextFormField(
-      controller: TextEditingController(text: value),
-      readOnly: readOnly,
-      onTap: onTap, // para manejar clicks si quieres
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (v) {
-        if (!readOnly && (v == null || v.isEmpty)) {
-          return 'Campo requerido';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _textField(
-      TextEditingController c, String label, IconData icon) {
-    return TextFormField(
-      controller: c,
-      keyboardType: TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'Campo requerido';
-        return null;
-      },
-    );
-  }
 
 }

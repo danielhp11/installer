@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:instaladores_new/service/request_service.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
+import 'package:instaladores_new/view/widget/text_field_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../../service/response_service.dart';
@@ -94,7 +95,7 @@ class InboxItemCard extends StatelessWidget {
                 /// 🔹 SUBINFO
                 Row(
                   children: [
-                    _infoText("Ticket #${item.id}"),
+                    infoText("Ticket #${item.id}"),
                     const Spacer(),
                     Icon(Icons.person, size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
@@ -113,7 +114,7 @@ class InboxItemCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _infoText("Descripción:\n${item.description}"),
+                    infoText("Descripción:\n${item.description}"),
                   ],
                 ),
 
@@ -122,28 +123,30 @@ class InboxItemCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     _actionIcon(
-                      icon: Icons.brunch_dining_rounded,
+                      icon: Icons.construction,
+                      color: _getBadgeColor(),
                       visible: !UserSession().isMaster &&
                           item.status == statusOpen,
                       onTap: () =>
                           showStarJobFormBottomSheet(context, item),
                     ),
                     _actionIcon(
-                      icon: Icons.pin_end_sharp,
+                      icon: Icons.task_alt,
+                      color: _getBadgeColor(),
                       visible: !UserSession().isMaster &&
                           item.status == statusProcess,
                       onTap: () =>
                           showCloseJobFormBottomSheet(context, item),
                     ),
                     _actionIcon(
-                      icon: Icons.security_update_outlined,
+                      icon: Icons.edit,
                       visible: UserSession().isMaster  &&
                           item.status == statusOpen,
                       onTap: () =>
                           showFuelFormBottomSheet(context, item),
                     ),
                     _actionIcon(
-                      icon: Icons.delete_outline_rounded,
+                      icon: Icons.delete_forever,
                       color: Colors.redAccent,
                       visible: UserSession().isMaster &&
                           item.status == statusOpen,
@@ -213,16 +216,16 @@ class InboxItemCard extends StatelessWidget {
     );
   }
 
-  Widget _infoText(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 12,
-        color: Colors.grey.shade600,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
+  // Widget _infoText(String text) {
+  //   return Text(
+  //     text,
+  //     style: TextStyle(
+  //       fontSize: 12,
+  //       color: Colors.grey.shade600,
+  //       fontWeight: FontWeight.w500,
+  //     ),
+  //   );
+  // }
 
 
   Widget _buildStatusBadge() {
@@ -296,22 +299,22 @@ class InboxItemCard extends StatelessWidget {
     }
   }
 
-  BorderSide _getBorderSide() {
-    switch (item.status) {
-      case statusOpen:
-        return BorderSide(color: Colors.blue.shade200, width: 2);
-      case statusProcess:
-        return BorderSide(color: Colors.orange.shade200, width: 2);
-      // case "enRevision":
-      //   return BorderSide(color: Colors.purple.shade200, width: 2);
-      case statusFinished:
-        return BorderSide(color: Colors.green.shade200, width: 1);
-      case statusClosed:
-        return BorderSide(color: Colors.grey.shade300, width: 1);
-      default:
-        return const BorderSide(color: Colors.transparent);
-    }
-  }
+  // BorderSide _getBorderSide() {
+  //   switch (item.status) {
+  //     case statusOpen:
+  //       return BorderSide(color: Colors.blue.shade200, width: 2);
+  //     case statusProcess:
+  //       return BorderSide(color: Colors.orange.shade200, width: 2);
+  //     // case "enRevision":
+  //     //   return BorderSide(color: Colors.purple.shade200, width: 2);
+  //     case statusFinished:
+  //       return BorderSide(color: Colors.green.shade200, width: 1);
+  //     case statusClosed:
+  //       return BorderSide(color: Colors.grey.shade300, width: 1);
+  //     default:
+  //       return const BorderSide(color: Colors.transparent);
+  //   }
+  // }
 
   void _showConfirmationDialog(
       BuildContext context,
