@@ -30,132 +30,200 @@ class InboxItemCard extends StatelessWidget {
     final bool isClosed = item.status == "CERRADO";
     final viewModel = context.watch<ListTicketViewmodel>();
 
-
-    return Card(
-      elevation: isClosed ? 1 : 3,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: _getBorderSide(),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: isClosed
+              ? [Colors.grey.shade200, Colors.grey.shade100]
+              : [_getBackgroundColor(), Colors.white], // AQUI CAMBIAR DE COLOR
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      color: _getBackgroundColor(),
-      child: InkWell(
-        // onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Company and Status Badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.unitId,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade600,
-                        letterSpacing: 0.5,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  _buildStatusBadge(),
-                ],
-              ),
-              const Divider(height: 16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
-              // Unit name and ticket number
-              Row(
-                children: [
-                  Icon(
-                    Icons.directions_bus,
-                    color: isClosed ? Colors.grey.shade400 : Colors.blue.shade700,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      item.unitId,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isClosed ? Colors.grey.shade600 : Colors.black87,
-                      ),
+                /// 🔹 HEADER
+                Row(
+                  children: [
+                    Icon(
+                      Icons.directions_bus_rounded,
+                      size: 28,
+                      color: isClosed
+                          ? Colors.grey
+                          : Colors.blue.shade700,
                     ),
-                  ),
-                  Container(
-                    width: 150, // ancho fijo en píxeles que quieras
-                    child: Text(
-                      'Ticket #${item.id}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                    const SizedBox(width: 10),
 
-              // Technician Name
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        item.technicianName,
+                    Expanded(
+                      child: Text(
+                        item.unitId,
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: isClosed
+                              ? Colors.grey.shade700
+                              : Colors.black87,
                         ),
                       ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Spacer(),
-                      _iconOption(
-                        icon: Icons.brunch_dining_rounded,
-                        onPressed: () => showStarJobFormBottomSheet(context, item),
-                        visible: !UserSession().isMaster && item.status != statusClosed && item.status == statusOpen,
+                    ),
+
+                    _buildStatusChip(),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                /// 🔹 SUBINFO
+                Row(
+                  children: [
+                    _infoText("Ticket #${item.id}"),
+                    const Spacer(),
+                    Icon(Icons.person, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      item.technicianName,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
                       ),
-                      _iconOption(
-                        icon: Icons.pin_end_sharp,
-                        onPressed: () => showCloseJobFormBottomSheet(context, item),
-                        visible: !UserSession().isMaster && item.status != statusClosed && item.status == statusProcess,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _infoText("Descripción:\n${item.description}"),
+                  ],
+                ),
+
+                /// 🔹 ACTIONS
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _actionIcon(
+                      icon: Icons.brunch_dining_rounded,
+                      visible: !UserSession().isMaster &&
+                          item.status == statusOpen,
+                      onTap: () =>
+                          showStarJobFormBottomSheet(context, item),
+                    ),
+                    _actionIcon(
+                      icon: Icons.pin_end_sharp,
+                      visible: !UserSession().isMaster &&
+                          item.status == statusProcess,
+                      onTap: () =>
+                          showCloseJobFormBottomSheet(context, item),
+                    ),
+                    _actionIcon(
+                      icon: Icons.security_update_outlined,
+                      visible: UserSession().isMaster  &&
+                          item.status == statusOpen,
+                      onTap: () =>
+                          showFuelFormBottomSheet(context, item),
+                    ),
+                    _actionIcon(
+                      icon: Icons.delete_outline_rounded,
+                      color: Colors.redAccent,
+                      visible: UserSession().isMaster &&
+                          item.status == statusOpen,
+                      onTap: () => _showConfirmationDialog(
+                        context,
+                            () => viewModel.deleteTicket(
+                          context: context,
+                          idTicket: item.id,
+                        ),
                       ),
-                      _iconOption(
-                        icon: Icons.security_update_outlined,
-                        onPressed: () => showFuelFormBottomSheet(context, item),
-                        visible: UserSession().isMaster && item.status != statusClosed,
-                      ),
-                      _iconOption(
-                        icon: Icons.delete,
-                        onPressed: () => _showConfirmationDialog(context, ()=> viewModel.deleteTicket(context: context, idTicket: item.id) ),
-                        visible: UserSession().isMaster && item.status != statusClosed,
-                      ),
-                    ],
-                  ),
-                ],
-              )
-            ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  Widget _buildStatusChip() {
+    final Color color = _getBadgeColor();
+    // final Color color = item.status == "CERRADO"
+    //     ? Colors.grey
+    //     : Colors.green;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        item.status,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _actionIcon({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool visible,
+    Color color = Colors.blue,
+  }) {
+    if (!visible) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoText(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey.shade600,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
 
   Widget _buildStatusBadge() {
     return Container(
@@ -192,7 +260,7 @@ class InboxItemCard extends StatelessWidget {
   Color _getBadgeColor() {
     switch (item.status.toUpperCase()) {
       case statusOpen:
-        return Colors.yellow.shade700;
+        return Colors.blue.shade700;
 
       case statusProcess:
         return Colors.orange.shade700;
@@ -214,7 +282,7 @@ class InboxItemCard extends StatelessWidget {
   Color _getBackgroundColor() {
     switch (item.status) {
       case statusOpen:
-        return Colors.red.shade50;
+        return Colors.blue.shade50;
       case statusProcess:
         return Colors.orange.shade50;
       // case "enRevision":
@@ -231,7 +299,7 @@ class InboxItemCard extends StatelessWidget {
   BorderSide _getBorderSide() {
     switch (item.status) {
       case statusOpen:
-        return BorderSide(color: Colors.red.shade200, width: 2);
+        return BorderSide(color: Colors.blue.shade200, width: 2);
       case statusProcess:
         return BorderSide(color: Colors.orange.shade200, width: 2);
       // case "enRevision":

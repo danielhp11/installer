@@ -1,11 +1,12 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EvidenceGrid extends StatefulWidget {
-  final List<String> images; // Base64 strings
-  final Function(List<String>) onImagesChanged;
+  final List<Map<String, String>> images; // [{ 'path': '...', 'source': 'CAMERA|GALLERY' }]
+  final Function(List<Map<String, String>>) onImagesChanged;
   final int maxImages;
   final bool readOnly;
 
@@ -24,36 +25,57 @@ class EvidenceGrid extends StatefulWidget {
 class _EvidenceGridState extends State<EvidenceGrid> {
   final ImagePicker _picker = ImagePicker();
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkLostData();
+    });
+  }
+
+  Future<void> _checkLostData() async {
+    try {
+      final LostDataResponse response = await _picker.retrieveLostData();
+      if (response.isEmpty || response.file == null) return;
+      _processImage(response.file!, 'CAMERA');
+    } catch (e) {
+      debugPrint("Error recuperando datos: $e");
+    }
+  }
+
+  Future<void> _processImage(XFile photo, String source) async {
+    try {
+      final String path = photo.path;
+      final newImages = List<Map<String, String>>.from(widget.images);
+      
+      if (!newImages.any((img) => img['path'] == path)) {
+        newImages.add({'path': path, 'source': source});
+        widget.onImagesChanged(newImages);
+      }
+    } catch (e) {
+      debugPrint('Error al procesar imagen: $e');
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? photo = await _picker.pickImage(
         source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 60,
       );
 
       if (photo != null) {
-        final bytes = await photo.readAsBytes();
-        final base64Image = base64Encode(bytes);
-        
-        final newImages = List<String>.from(widget.images);
-        newImages.add(base64Image);
-        
-        widget.onImagesChanged(newImages);
+        await _processImage(photo, source == ImageSource.camera ? 'CAMERA' : 'GALLERY');
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al capturar imagen')),
-        );
-      }
+      debugPrint('Error capturando imagen: $e');
     }
   }
 
   void _removeImage(int index) {
-    final newImages = List<String>.from(widget.images);
+    final newImages = List<Map<String, String>>.from(widget.images);
     newImages.removeAt(index);
     widget.onImagesChanged(newImages);
   }
@@ -61,19 +83,20 @@ class _EvidenceGridState extends State<EvidenceGrid> {
   void _showSourceSelector() {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => SafeArea(
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Tomar foto'),
+              leading: const Icon(Icons.camera_alt, color: Colors.blue),
+              title: const Text('Cámara'),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: const Icon(Icons.photo_library, color: Colors.green),
               title: const Text('Galería'),
               onTap: () {
                 Navigator.pop(context);
@@ -88,100 +111,82 @@ class _EvidenceGridState extends State<EvidenceGrid> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: widget.images.length + (widget.images.length < widget.maxImages && !widget.readOnly ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == widget.images.length) {
-              return _buildAddButton();
-            }
-            return _buildImageItem(index);
-          },
-        ),
-        if (widget.images.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              '${widget.images.length}/${widget.maxImages} imágenes',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: widget.images.length + (widget.images.length < widget.maxImages && !widget.readOnly ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == widget.images.length) {
+          return _buildAddButton();
+        }
+        return _buildImageItem(index);
+      },
     );
   }
 
   Widget _buildAddButton() {
     return InkWell(
       onTap: _showSourceSelector,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade400, style: BorderStyle.solid),
+          border: Border.all(color: Colors.grey.shade300, width: 1.5),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_a_photo, color: Colors.grey.shade600),
-            const SizedBox(height: 4),
-            Text(
-              'Agregar',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
+        child: const Icon(Icons.add_a_photo, color: Colors.grey),
       ),
     );
   }
 
   Widget _buildImageItem(int index) {
+    final Map<String, String> imageData = widget.images[index];
+    final String imagePath = imageData['path'] ?? '';
+
     return Stack(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            image: DecorationImage(
-              image: MemoryImage(base64Decode(widget.images[index])),
-              fit: BoxFit.cover,
-            ),
-          ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: _buildImageWidget(imagePath),
         ),
         if (!widget.readOnly)
           Positioned(
             top: 4,
             right: 4,
-            child: InkWell(
+            child: GestureDetector(
               onTap: () => _removeImage(index),
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.close,
-                  size: 12,
-                  color: Colors.white,
-                ),
+                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                child: const Icon(Icons.close, size: 12, color: Colors.white),
               ),
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildImageWidget(String imagePath) {
+    final file = File(imagePath);
+    
+    // Eliminamos lengthSync del build para evitar bloqueos de UI y pantalla blanca
+    return Image.file(
+      file,
+      key: ValueKey(imagePath), // Clave simple para evitar re-renderizados innecesarios
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      gaplessPlayback: true,
+      cacheWidth: 250, // Miniatura ligera para ahorrar RAM
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: Colors.grey.shade200,
+        child: const Icon(Icons.broken_image, color: Colors.grey),
+      ),
     );
   }
 }

@@ -18,6 +18,14 @@ class CloseJobTicket extends StatefulWidget {
 }
 class _CloseJobTicket extends State<CloseJobTicket> {
 
+  @override
+  void initState() {
+    super.initState();
+    // Limpiamos las evidencias previas al iniciar la vista
+    Future.microtask(() {
+      context.read<ListTicketViewmodel>().resetEvidenceClose();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,28 +41,46 @@ class _CloseJobTicket extends State<CloseJobTicket> {
           bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         ),
         child: Form(
-            key: viewModel.formKeyStartJob,
+            key: viewModel.formKeyCloseJob,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _header(),
                 const SizedBox(height: 16),
-                _textField( label: 'Empresa', icon: Icons.business, value: UserSession().branchRoot, readOnly: true ),
+                _textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company!, readOnly: true ),
                 const SizedBox(height: 16),
-                _textField( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
+                _textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
                 const SizedBox(height: 16),
-                _textField( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true ),
+                _textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true, ),
+                const SizedBox(height: 16),
+                _textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
                 const SizedBox(height: 16),
                 EvidenceGrid(
-                  images: viewModel.evidencePhotos,
+                  images: viewModel.evidenceClosePhotos,
                   onImagesChanged: (images) {
                     setState(() {
-                      viewModel.evidencePhotos = images;
+                      viewModel.evidenceClosePhotos = images;
                     });
                   },
                   maxImages: 6,
                 ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    viewModel.sendEvidenceClose(context: context, idTicket: widget.ticket.id, ticket: widget.ticket);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Enviar',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                )
               ],
             )
         ),
@@ -78,7 +104,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
     );
   }
 
-  Widget _textField({
+  Widget _textFieldOnlyRead({
     required String label,
     required IconData icon,
     required String value,
@@ -103,6 +129,21 @@ class _CloseJobTicket extends State<CloseJobTicket> {
     );
   }
 
-
+  Widget _textField(
+      TextEditingController c, String label, IconData icon) {
+    return TextFormField(
+      controller: c,
+      keyboardType: TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: const OutlineInputBorder(),
+      ),
+      validator: (v) {
+        if (v == null || v.isEmpty) return 'Campo requerido';
+        return null;
+      },
+    );
+  }
 
 }

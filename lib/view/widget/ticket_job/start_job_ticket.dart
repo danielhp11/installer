@@ -23,7 +23,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     super.initState();
     // Limpiamos las evidencias previas al iniciar la vista
     Future.microtask(() {
-      context.read<ListTicketViewmodel>().resetEvidence();
+      context.read<ListTicketViewmodel>().resetEvidenceStart();
     });
   }
 
@@ -48,7 +48,7 @@ class _StartJobTicket extends State<StartJobTicket> {
             children: [
               _header(),
               const SizedBox(height: 16),
-              _textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: UserSession().branchRoot, readOnly: true ),
+              _textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company.toString(), readOnly: true ),
               const SizedBox(height: 16),
               _textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
               const SizedBox(height: 16),
@@ -58,7 +58,7 @@ class _StartJobTicket extends State<StartJobTicket> {
               const SizedBox(height: 16),
               EvidenceGrid(
                 images: viewModel.evidencePhotos,
-                onImagesChanged: (images) {
+                onImagesChanged: (List<Map<String, String>> images) {
                   setState(() {
                     viewModel.evidencePhotos = images;
                   });
@@ -68,7 +68,7 @@ class _StartJobTicket extends State<StartJobTicket> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  viewModel.sendEvidence(context: context, idTicket: widget.ticket.id);
+                  viewModel.sendEvidence(context: context, idTicket: widget.ticket.id, ticket: widget.ticket);
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),

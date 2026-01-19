@@ -15,7 +15,10 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
-  
+
+  String? get errorMessage => _errorMessage;
+  bool get isLoading => _isLoading;
+
   // region TICKET VIEW
   List<ApiResTicket> _tickets = [];
   TicketSortOption _sortOption = TicketSortOption.dateDesc;
@@ -25,15 +28,15 @@ class ListTicketViewmodel extends ChangeNotifier {
   List<ApiResTicket> get tickets {
     List<ApiResTicket> filtered = _tickets.where((ticket) {
       final query = _searchQuery.toLowerCase();
-      
+
       // Búsqueda específica por unitId (Nombre de unidad)
       final matchesUnit = ticket.unitId.toLowerCase().contains(query);
-      
+
       // Búsqueda secundaria opcional por título para flexibilidad
       final matchesTitle = ticket.title.toLowerCase().contains(query);
 
       final isCancelled = ticket.status.toUpperCase() == "CANCELADO";
-      
+
       // Primero evaluamos el filtro de estado
       bool stateMatch = false;
       if (_filterOption == TicketFilterOption.active) {
@@ -46,7 +49,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       if (query.isNotEmpty) {
         return (matchesUnit || matchesTitle) && stateMatch;
       }
-      
+
       return stateMatch;
     }).toList();
 
@@ -103,7 +106,6 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController unitController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
 
-  // Cambiado a dynamic para guardar objetos completos y evitar error de subtipo
   List<dynamic> localUnitBusmen = [];
   List<dynamic> localUnitTemsa = [];
 
@@ -166,12 +168,12 @@ class ListTicketViewmodel extends ChangeNotifier {
       if (busmenUnits != null && isBusmenUnit ) {
         // Ordenamos objetos para que coincidan con la lista de nombres
         busmenUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
-        localUnitBusmen = busmenUnits as List<dynamic>;
+        localUnitBusmen = busmenUnits;
         combinedNames.addAll(localUnitBusmen.map((u) => u.name.toString()));
       }
       if (temsaUnits != null && !isBusmenUnit) {
         temsaUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
-        localUnitTemsa = temsaUnits as List<dynamic>;
+        localUnitTemsa = temsaUnits;
         combinedNames.addAll(localUnitTemsa.map((u) => u.name.toString()));
       }
 
@@ -187,17 +189,26 @@ class ListTicketViewmodel extends ChangeNotifier {
   // region BTN SHEET START JOB TICKET VIEW
   final formKeyStartJob = GlobalKey<FormState>();
   TextEditingController descriptionStartController = TextEditingController();
-  List<String> evidencePhotos = [];
+  List<Map<String, String>> evidencePhotos = [];
 
-  void resetEvidence() {
+  void resetEvidenceStart() {
     evidencePhotos = [];
+    descriptionStartController.clear(); // Limpia el texto para evitar que aparezca en la siguiente apertura
     notifyListeners();
   }
   // endregion BTN SHEET START JOB TICKET VIEW
 
-  String? get errorMessage => _errorMessage;
-  bool get isLoading => _isLoading;
+  // region BTN SHEET CLOSE JOB TICKET VIEW
+  final formKeyCloseJob = GlobalKey<FormState>();
+  TextEditingController descriptionCloseController = TextEditingController();
+  List<Map<String, String>> evidenceClosePhotos = [];
 
+  void resetEvidenceClose() {
+    evidenceClosePhotos = [];
+    descriptionCloseController.clear();
+    notifyListeners();
+  }
+  // region BTN SHEET CLOSE JOB TICKET VIEW
 
   // region TICKET VIEW
   Future<void> loadTickets()async{
@@ -218,13 +229,13 @@ class ListTicketViewmodel extends ChangeNotifier {
       );
 
       _tickets = ticketsRecuperados ?? [];
-      
+
       // Extraer unidades únicas de los tickets existentes inicialmente
       if (_units.isEmpty) {
         _units = _tickets.map((t) => t.unitId).toSet().toList();
         _units.sort();
       }
-      
+
     }catch(e){
       _errorMessage = e.toString();
     }finally{
@@ -246,268 +257,380 @@ class ListTicketViewmodel extends ChangeNotifier {
   }
 // endregion TICKET VIEW
 
-// region BTN SHEET NEW TICKET VIEW
-  Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
+  // region BTN SHEET NEW TICKET VIEW
+    Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
 
-    if (!formKey.currentState!.validate()) return;
+      if (!formKey.currentState!.validate()) return;
 
-    print("installer => ${installerController.text.toUpperCase()}");
-    if (installerController.text.isEmpty) return;
+      print("installer => ${installerController.text.toUpperCase()}");
+      if (installerController.text.isEmpty) return;
 
-    print("unit => ${unitController.text.toUpperCase()}");
-    if (unitController.text.isEmpty) return;
+      print("unit => ${unitController.text.toUpperCase()}");
+      if (unitController.text.isEmpty) return;
 
-    _isLoading = true;
-    _errorMessage = null;
+      _isLoading = true;
+      _errorMessage = null;
 
-    final serv = RequestServ.instance;
+      final serv = RequestServ.instance;
 
-    try{
-      String url = isUpdate? "${RequestServ.urlGetTickets}/${idTicket}":"${RequestServ.urlGetTickets}/";
-      String method = isUpdate? "PUT":"POST";
+      try{
+        String url = isUpdate? "${RequestServ.urlGetTickets}/${idTicket}":"${RequestServ.urlGetTickets}/";
+        String method = isUpdate? "PUT":"POST";
 
-      Map<String, dynamic> param = isUpdate?
-        {
+        Map<String, dynamic> param = isUpdate?
+          {
+            "title": "",
+            "description": descriptionController.text,
+            "priority": "",
+            "category": "",
+            "status": "ABIERTO",
+            "technicianName": installerController.text,
+            "unitId": selectedUnitId.toString(),
+            "company": companyController.text.toUpperCase(),
+            "id": idTicket,
+            "createdAt": DateTime.now().toIso8601String(),
+            "technicianId": installerId,
+            "modifierId": UserSession().idUser,
+            "updatedByName": UserSession().nameUser,
+            "evidences": [],
+            "formsData": [],
+            "history": []
+          }:{
           "title": "",
           "description": descriptionController.text,
           "priority": "",
           "category": "",
           "status": "ABIERTO",
+          "technicianId": installerId,
           "technicianName": installerController.text,
           "unitId": selectedUnitId.toString(),
           "company": companyController.text.toUpperCase(),
-          "id": idTicket,
-          "createdAt": DateTime.now().toIso8601String(),
-          "technicianId": installerId,
-          "modifierId": UserSession().idUser,
-          "updatedByName": UserSession().nameUser,
-          "evidences": [],
-          "formsData": [],
-          "history": []
-        }:{
-        "title": "",
-        "description": descriptionController.text,
-        "priority": "",
-        "category": "",
-        "status": "ABIERTO",
-        "technicianId": installerId,
-        "technicianName": installerController.text,
-        "unitId": selectedUnitId.toString(),
-        "company": companyController.text.toUpperCase(),
-      };
+        };
 
-      print("param => $param");
-      ApiResTicket? ticket = await serv.handlingRequestParsed<ApiResTicket>(
-        urlParam: url,
-        params: param,
-        method: method,
-        asJson: true,
-        fromJson: (json) => ApiResTicket.fromJson(json),
-      );
+        print("param => $param");
+        ApiResTicket? ticket = await serv.handlingRequestParsed<ApiResTicket>(
+          urlParam: url,
+          params: param,
+          method: method,
+          asJson: true,
+          fromJson: (json) => ApiResTicket.fromJson(json),
+        );
 
-      if(ticket == null) return;
+        if(ticket == null) return;
 
-      loadTickets();
-
-      Navigator.pop(context);
-      _isLoading = false;
-      resetForm();
-      notifyListeners();
-
-    }catch(e){
-      print("[ ERROR ] CREATE TICKET => ${e.toString()}");
-    }
-  }
-// endregion BTN SHEET NEW TICKET VIEW
-
-// region GET INSTALLER
-  Future<void> getInstaller() async {
-    final serv = RequestServ.instance;
-    try{
-      List<ApiResInstaller>? installers = await serv.handlingRequestParsed<List<ApiResInstaller>>(
-        urlParam: RequestServ.urlInstaller,
-        method: "GET",
-        asJson: true,
-        fromJson: (json) {
-          final list = json as List<dynamic>;
-          return list.map((item) => ApiResInstaller.fromJson(item)).toList();
-        },
-      );
-
-      _installers = installers ?? [];
-      
-      // Auto-seleccionar si el nombre en el controller ya existe en la lista
-      if (installerController.text.isNotEmpty && _installers.isNotEmpty) {
-        try {
-          _selectedInstaller = _installers.firstWhere(
-            (element) => element.full_name.toLowerCase() == installerController.text.toLowerCase()
-          );
-        } catch (_) {
-          // No se encontró coincidencia exacta
-        }
-      }
-
-      notifyListeners();
-
-    }catch(e){
-      print("[ ERR ] GET INSTALLER: ${e.toString()}");
-    }
-  }
-// endregion GET INSTALLER
-
-// region BTN DELETE TICKET VIEW
-  Future<void> deleteTicket({required BuildContext context, int? idTicket}) async{
-
-    _isLoading = true;
-    _errorMessage = null;
-
-    Navigator.of(context).pop();
-
-
-    try{
-
-      bool isSuccessful = await deleteTicketTest(
-        ticketId : idTicket!,
-        modifierId: UserSession().idUser,
-        updatedByName : UserSession().nameUser,
-      );
-
-      if(isSuccessful){
         loadTickets();
+
+        Navigator.pop(context);
         _isLoading = false;
+        resetForm();
         notifyListeners();
+
+      }catch(e){
+        print("[ ERROR ] CREATE TICKET => ${e.toString()}");
       }
-
-
-    }catch(e){
-      print("[ ERROR ] DELETE TICKET ${e.toString()}");
     }
-  }
+  // endregion BTN SHEET NEW TICKET VIEW
 
-  Future<bool> deleteTicketTest({
-    required int ticketId,
-    required int modifierId,
-    required String updatedByName,
-  }) async {
+  // region GET INSTALLER
+    Future<void> getInstaller() async {
+      final serv = RequestServ.instance;
+      try{
+        List<ApiResInstaller>? installers = await serv.handlingRequestParsed<List<ApiResInstaller>>(
+          urlParam: RequestServ.urlInstaller,
+          method: "GET",
+          asJson: true,
+          fromJson: (json) {
+            final list = json as List<dynamic>;
+            return list.map((item) => ApiResInstaller.fromJson(item)).toList();
+          },
+        );
 
-    String url_new = "${RequestServ.baseUrlNor}${RequestServ.urlGetTickets}/$ticketId";
+        _installers = installers ?? [];
 
-    final Uri url = Uri.parse(url_new).replace(
-      queryParameters: {
-        'modifier_id': modifierId.toString(),
-        'updatedByName': updatedByName,
-      },
-    );
+        // Auto-seleccionar si el nombre en el controller ya existe en la lista
+        if (installerController.text.isNotEmpty && _installers.isNotEmpty) {
+          try {
+            _selectedInstaller = _installers.firstWhere(
+              (element) => element.full_name.toLowerCase() == installerController.text.toLowerCase()
+            );
+          } catch (_) {
+            // No se encontró coincidencia exacta
+          }
+        }
 
-    try {
-      final response = await http.delete(
-        url,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
+        notifyListeners();
+
+      }catch(e){
+        print("[ ERR ] GET INSTALLER: ${e.toString()}");
+      }
+    }
+  // endregion GET INSTALLER
+
+  // region BTN DELETE TICKET VIEW
+    Future<void> deleteTicket({required BuildContext context, int? idTicket}) async{
+
+      _isLoading = true;
+      _errorMessage = null;
+
+      Navigator.of(context).pop();
+
+
+      try{
+
+        bool isSuccessful = await deleteTicketTest(
+          ticketId : idTicket!,
+          modifierId: UserSession().idUser.toString(),
+          updatedByName : UserSession().nameUser,
+        );
+
+        if(isSuccessful){
+          loadTickets();
+          _isLoading = false;
+          notifyListeners();
+        }
+
+
+      }catch(e){
+        print("[ ERROR ] DELETE TICKET ${e.toString()}");
+      }
+    }
+
+    Future<bool> deleteTicketTest({
+      required int ticketId,
+      required String modifierId,
+      required String updatedByName,
+    }) async {
+
+      String url_new = "${RequestServ.baseUrlNor}${RequestServ.urlGetTickets}/$ticketId";
+
+      final Uri url = Uri.parse(url_new).replace(
+        queryParameters: {
+          'modifier_id': modifierId.toString(),
+          'updatedByName': updatedByName,
         },
       );
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        // Eliminado correctamente
-        return true;
-      } else {
-        print('Error al eliminar ticket');
-        print('Status: ${response.statusCode}');
-        print('Body: ${response.body}');
+      try {
+        final response = await http.delete(
+          url,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 204) {
+          // Eliminado correctamente
+          return true;
+        } else {
+          print('Error al eliminar ticket');
+          print('Status: ${response.statusCode}');
+          print('Body: ${response.body}');
+          return false;
+        }
+      } catch (e) {
+        print('Exception deleteTicket: $e');
         return false;
       }
-    } catch (e) {
-      print('Exception deleteTicket: $e');
-      return false;
     }
-  }
-// endregion BTN DELETE TICKET VIEW
+  // endregion BTN DELETE TICKET VIEW
 
-// region BTN SHEET START JOB TICKET VIEW
-  Future<void> sendEvidence({required BuildContext context, int? idTicket}) async{
+  // region BTN SHEET START JOB TICKET VIEW
+    Future<void> sendEvidence({required BuildContext context, int? idTicket, ApiResTicket? ticket}) async{
 
-    if (!formKeyStartJob.currentState!.validate()) return;
+      if (!formKeyStartJob.currentState!.validate()) return;
 
-    if( evidencePhotos.isEmpty ) return;
+      if( evidencePhotos.isEmpty ) return;
 
-    final serv = RequestServ.instance;
+
+      try{
+
+        // region CAMBIAR ESTATUS
+        print("=====>1. CHANGE STATUS <====");
+        await updateStatus(
+            idTicket.toString(),
+            "PROCESO",
+            UserSession().nameUser
+        );
+        // endregion CAMBIAR ESTATUS
+
+        // region SUBIR FOTO
+        print("=====>2. ITERATION TO SAVE PHOTO <====");
+        // Usamos un loop for para esperar secuencialmente la subida de cada foto
+        for (int i = 0; i < evidencePhotos.length; i++) {
+          final photoData = evidencePhotos[i];
+          String? path = photoData['path'];
+          if (path != null) {
+            String? imageUrl = await uploadPhoto(path);
+            if (imageUrl != null) {
+              print("Uploaded: $imageUrl");
+              await registerEvidence(idTicket.toString(), imageUrl, "PROCESO", i + 1);
+            }
+          }
+        }
+        // endregion SUBIR FOTO
+
+        // region ENVIAR FORMULARIO
+        print("=====>4. SEND FORM  <====");
+        Map<String, dynamic> data = {
+          "technician": ticket?.technicianName,
+          "unit": ticket?.unitId,
+          "observations": descriptionStartController.text,
+          "timestamp": DateTime.now().toIso8601String()
+        };
+        await sendFormData(idTicket.toString(), "PROCESO", data);
+        // endregion ENVIAR FORMULARIO
+
+        loadTickets();
+        _isLoading = false;
+        Navigator.pop(context); // Cerramos el panel al terminar
+        notifyListeners();
+      }catch(e){
+        print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
+      }
+    }
+
+    // 1.
+    Future<void> updateStatus(String ticketId, String status, String changedBy) async {
+      print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/status");
+      final response = await http.put(
+        Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/status'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'status': status,
+          'changedBy': changedBy,
+        }),
+      );
+      print("=> param ${
+          {
+            'status': status,
+            'changedBy': changedBy,
+          }
+      }");
+      print(response.headers);
+    }
+
+    // 2.
+    Future<String?> uploadPhoto(String filePath) async {
+      print("url => ${RequestServ.baseUrlNor}tickets/upload");
+      print("file => ${filePath}");
+      try {
+        final request = http.MultipartRequest('POST', Uri.parse('${RequestServ.baseUrlNor}tickets/upload'));
+        request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          final data = json.decode(response.body);
+          return data['imageUrl']?.toString();
+        } else {
+          print("Upload failed: ${response.statusCode}");
+          return null;
+        }
+      } catch (e) {
+        print("Error uploading: $e");
+        return null;
+      }
+    }
+
+    // 3.
+    Future<void> registerEvidence(String ticketId, String imageUrl, String phase, int sequence) async {
+      print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/evidence");
+      print("${
+          {
+            'imageUrl': imageUrl,
+            'phase': phase,
+            'sequence': sequence,
+          }
+      }");
+      final response = await http.post(
+        Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/evidence'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'imageUrl': imageUrl,
+          'phase': phase,
+          'sequence': sequence,
+        }),
+      );
+      print(response);
+    }
+
+    // 4.
+    Future<void> sendFormData(String ticketId, String formType, Map<String, dynamic> data) async {
+      print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/form-data");
+      print("${
+          {
+            'formType': formType,
+            'data': data,
+          }
+      }");
+      final response = await http.post(
+        Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/form-data'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'formType': formType,
+          'data': data,
+        }),
+      );
+      print(response);
+    }
+  // endregion BTN SHEET START JOB TICKET VIEW
+
+// region BTN SHEET CLOSE JOB TICKET VIEW
+  Future<void> sendEvidenceClose({required BuildContext context, int? idTicket, ApiResTicket? ticket}) async{
+
+    if (!formKeyCloseJob.currentState!.validate()) return;
+
+    if( evidenceClosePhotos.isEmpty ) return;
+
 
     try{
 
       // region CAMBIAR ESTATUS
-      String url = "${RequestServ.urlGetTickets}/$idTicket/status";
-
-      await serv.handlingRequest(
-        urlParam: url,
-        params: {
-          "status": "PROCESO",
-          "changedBy": UserSession().idUser
-        },
-        method: "PUT",
-        asJson: true,
+      print("=====>1. CHANGE STATUS <====");
+      await updateStatus(
+          idTicket.toString(),
+          "PENDIENTE_VALIDACION",
+          UserSession().nameUser
       );
-
       // endregion CAMBIAR ESTATUS
 
       // region SUBIR FOTO
-
-      evidencePhotos.asMap().forEach((index, photo){
-        print("ticket id: $idTicket | phase: PROCESO | sequence: ${index+1} | photo: $photo");
-        uploadPhoto(photo);
-      });
+      print("=====>2. ITERATION TO SAVE PHOTO <====");
+      // Usamos un loop for para esperar secuencialmente la subida de cada foto
+      for (int i = 0; i < evidenceClosePhotos.length; i++) {
+        final photoData = evidenceClosePhotos[i];
+        String? path = photoData['path'];
+        if (path != null) {
+          String? imageUrl = await uploadPhoto(path);
+          if (imageUrl != null) {
+            print("Uploaded: $imageUrl");
+            await registerEvidence(idTicket.toString(), imageUrl, "PENDIENTE_VALIDACION", i + 1);
+          }
+        }
+      }
       // endregion SUBIR FOTO
 
-      // region LIGAR FOTO
-      evidencePhotos.asMap().forEach((index, photo){
-        registerEvidence( idTicket.toString(), photo, "PROCESO", index+1 );
-      });
-      // endregion LIGAR FOTO
-
       // region ENVIAR FORMULARIO
+      print("=====>4. SEND FORM  <====");
+      Map<String, dynamic> data = {
+        "technician": ticket?.technicianName,
+        "unit": ticket?.unitId,
+        "observations": descriptionStartController.text,
+        "timestamp": DateTime.now().toIso8601String()
+      };
+      await sendFormData(idTicket.toString(), "PENDIENTE_VALIDACION", data);
       // endregion ENVIAR FORMULARIO
 
       loadTickets();
       _isLoading = false;
+      Navigator.pop(context); // Cerramos el panel al terminar
       notifyListeners();
     }catch(e){
-      print("[ ERROR ] DELETE TICKET ${e.toString()}");
+      print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
     }
   }
-
-  Future<String> uploadPhoto(String filePath) async {
-    final request = http.MultipartRequest('POST', Uri.parse('${RequestServ.baseUrlNor}/tickets/upload'));
-    request.files.add(await http.MultipartFile.fromPath('file', filePath));
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final data = json.decode(response.body);
-      return data['imageUrl']; // Assuming API returns {"imageUrl": "/uploads/..."}
-    } else {
-      throw Exception('Failed to upload photo: ${response.body}');
-    }
-  }
-
-  Future<void> registerEvidence(String ticketId, String imageUrl, String phase, int sequence) async {
-    final serv = RequestServ.instance;
-    try {
-      await serv.handlingRequest(
-        urlParam: 'evidences',
-        method: 'POST',
-        asJson: true,
-        params: {
-          'ticketId': int.parse(ticketId),
-          'imageUrl': imageUrl,
-          'phase': phase,
-          'sequence': sequence,
-        },
-      );
-    } catch (e) {
-      print("[ ERR ] REGISTER EVIDENCE: ${e.toString()}");
-    }
-  }
-// endregion BTN SHEET START JOB TICKET VIEW
+// region BTN SHEET CLOSE JOB TICKET VIEW
 
 }
