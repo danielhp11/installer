@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../service/request_service.dart';
 import '../service/response_service.dart';
 import '../service/user_session_service.dart';
+import '../view/widget/alert_dialog.dart';
 
 enum TicketSortOption { dateDesc, dateAsc, status, unit }
 enum TicketFilterOption { active, cancelled }
@@ -336,8 +337,21 @@ class ListTicketViewmodel extends ChangeNotifier {
         resetForm();
         notifyListeners();
 
+        String titleAlert = isUpdate? "Ticket actualizado":"Ticket creado";
+        String bodyAlert = isUpdate? "sido actualizado":"sido creado";
+
+        AnimatedResultDialog.showSuccess(
+          context,
+          title: titleAlert,
+          message: "El ticket ha $bodyAlert correctamente.",
+        );
       }catch(e){
         print("[ ERROR ] CREATE TICKET => ${e.toString()}");
+        AnimatedResultDialog.showError(
+            context,
+            title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
+            message: "Error: ${e.toString()}"
+        );
       }
     }
   // endregion BTN SHEET NEW TICKET VIEW
@@ -398,11 +412,22 @@ class ListTicketViewmodel extends ChangeNotifier {
           loadTickets();
           _isLoading = false;
           notifyListeners();
-        }
 
+          AnimatedResultDialog.showSuccess(
+            context,
+            title: "Eliminado con éxito",
+            message: "El ticket #$idTicket se eliminó correctamente.",
+          );
+
+        }
 
       }catch(e){
         print("[ ERROR ] DELETE TICKET ${e.toString()}");
+        AnimatedResultDialog.showError(
+            context,
+            title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
+            message: "Error: ${e.toString()}"
+        );
       }
     }
 
@@ -451,7 +476,14 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       if (!formKeyStartJob.currentState!.validate()) return;
 
-      if( evidencePhotos.isEmpty ) return;
+      if( evidencePhotos.isEmpty ) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "Ninguna evidencia",
+            message: "Por favor, envía al menos una fotografía."
+        );
+        return;
+      }
 
 
       try{
@@ -496,8 +528,19 @@ class ListTicketViewmodel extends ChangeNotifier {
         _isLoading = false;
         Navigator.pop(context); // Cerramos el panel al terminar
         notifyListeners();
+
+        AnimatedResultDialog.showSuccess(
+          context,
+          title: "Envío de evidencias",
+          message: "Se ha iniciado el trabajo correspondiente al ticket #$idTicket.",
+        );
       }catch(e){
         print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
+        AnimatedResultDialog.showError(
+            context,
+            title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
+            message: "Error: ${e.toString()}"
+        );
       }
     }
 
@@ -509,7 +552,14 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     if (!formKeyCloseJob.currentState!.validate()) return;
 
-    if( evidenceClosePhotos.isEmpty ) return;
+    if( evidenceClosePhotos.isEmpty ){
+      AnimatedResultDialog.showError(
+          context,
+          title: "Ninguna evidencia",
+          message: "Por favor, envía al menos una fotografía."
+      );
+      return;
+    }
 
 
     try{
@@ -552,10 +602,22 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       loadTickets();
       _isLoading = false;
-      Navigator.pop(context); // Cerramos el panel al terminar
+      Navigator.pop(context);
       notifyListeners();
+
+      AnimatedResultDialog.showSuccess(
+        context,
+        title: "Envío de evidencias\nTicket Cerrado",
+        message: "Se ha cerrado el trabajo correspondiente al ticket #$idTicket.",
+      );
+
     }catch(e){
       print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
+      AnimatedResultDialog.showError(
+          context,
+          title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
+          message: "Error: ${e.toString()}"
+      );
     }
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW

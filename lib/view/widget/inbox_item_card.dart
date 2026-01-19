@@ -16,7 +16,7 @@ class InboxItemCard extends StatelessWidget {
   static const String statusProcess = "PROCESO";
   static const String statusPendingValidation = "PENDIENTE_VALIDACION";
   static const String statusFinished = "FINALIZADO";
-  static const String statusClosed = "CANCELADO";
+  static const String statusClosed = "CERRADO";
 
 
 
@@ -37,7 +37,7 @@ class InboxItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: isClosed
-              ? [Colors.grey.shade200, Colors.grey.shade100]
+              ? [_getBackgroundColor(), Colors.grey.shade100]
               : [_getBackgroundColor(), Colors.white], // AQUI CAMBIAR DE COLOR
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -227,7 +227,7 @@ class InboxItemCard extends StatelessWidget {
         return Colors.deepPurple.shade700;
 
       case statusClosed:
-        return Colors.grey.shade700;
+        return Colors.lightGreen.shade700;
 
       default:
         return Colors.blue.shade700;
@@ -243,7 +243,7 @@ class InboxItemCard extends StatelessWidget {
         return Colors.deepPurple.shade50;
 
       case statusClosed:
-        return Colors.grey.shade100;
+        return Colors.lightGreen.shade100;
 
       default:
         return Colors.blue.shade50;

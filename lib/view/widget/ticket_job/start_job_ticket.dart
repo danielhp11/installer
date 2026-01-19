@@ -54,9 +54,11 @@ class _StartJobTicket extends State<StartJobTicket> {
               textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
               const SizedBox(height: 16),
               textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+              infoText("[${viewModel.evidencePhotos.length}/6] mínimo 1."),
+              const SizedBox(height: 3),
               EvidenceGrid(
                 images: viewModel.evidencePhotos,
                 onImagesChanged: (List<Map<String, String>> images) {
