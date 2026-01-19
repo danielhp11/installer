@@ -53,7 +53,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         setState(() {
           isUpdate = true;
         });
-        print("Update ticket # ${widget.ticket?.id} => ${isUpdate}");
+        // print("Update ticket # ${widget.ticket?.id} => ${isUpdate}");
       }
     } else {
       // Nuevo: Limpiar campos anteriores
@@ -321,7 +321,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                       leading: const Icon(Icons.directions_car),
                       title: Text(unit),
                       onTap: () {
-                        print(unit);
+                        // print(unit);
                         vm.setSelectedUnit(unit: unit, index: index);
                         Navigator.pop(context);
                       },

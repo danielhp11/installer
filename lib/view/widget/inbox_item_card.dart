@@ -15,7 +15,6 @@ class InboxItemCard extends StatelessWidget {
   static const String statusOpen = "ABIERTO";
   static const String statusProcess = "PROCESO";
   static const String statusPendingValidation = "PENDIENTE_VALIDACION";
-  static const String statusFinished = "FINALIZADO";
   static const String statusClosed = "CERRADO";
   static const String statusCancel = "CANCELADO";
 
@@ -32,7 +31,7 @@ class InboxItemCard extends StatelessWidget {
     final bool isClosed = item.status == "CERRADO";
     final bool isCancel = item.status == "CANCELADO";
     final viewModel = context.watch<ListTicketViewmodel>();
-    print("=> InboxItemCard: ${item.history?.last.notes}");
+    // print("=> InboxItemCard: ${item.history?.last.notes}");
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

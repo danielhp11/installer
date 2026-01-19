@@ -87,12 +87,12 @@ class RequestServ {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return response.body;
       } else {
-        print("HTTP error: ${response.statusCode}");
-        print("response => ${response.headers}");
+        // print("HTTP error: ${response.statusCode}");
+        // print("response => ${response.headers}");
         return null;
       }
     } catch (e) {
-      print("Error en handlingRequest: $e");
+      // print("Error en handlingRequest: $e");
       return null;
     }
   }
@@ -113,7 +113,7 @@ class RequestServ {
       final jsonMap = jsonDecode(responseString);
       return fromJson(jsonMap);
     } catch (e) {
-      print("Error parseando JSON: $e");
+      // print("Error parseando JSON: $e");
       return null;
     }
   }
@@ -132,7 +132,7 @@ class RequestServ {
       );
 
       if (response.statusCode != 200) {
-        print("HTTP error: ${response.statusCode}");
+        // print("HTTP error: ${response.statusCode}");
         return null;
       }
 
@@ -145,7 +145,7 @@ class RequestServ {
       }
 
     } catch (e) {
-      print("Error fetchStatusForUnit: $e");
+      // print("Error fetchStatusForUnit: $e");
       return null;
     }
   }

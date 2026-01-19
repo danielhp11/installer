@@ -7,10 +7,9 @@ import 'package:http/http.dart' as http;
 import '../service/request_service.dart';
 import '../service/response_service.dart';
 import '../service/user_session_service.dart';
-import '../view/widget/alert_dialog.dart';
 
 enum TicketSortOption { dateDesc, dateAsc, status, unit }
-enum TicketFilterOption { active, cancelled }
+enum TicketFilterOption { active, cancelled, open, process, pending, closed }
 
 class ListTicketViewmodel extends ChangeNotifier {
 
@@ -23,7 +22,7 @@ class ListTicketViewmodel extends ChangeNotifier {
   // region TICKET VIEW
   List<ApiResTicket> _tickets = [];
   TicketSortOption _sortOption = TicketSortOption.dateDesc;
-  TicketFilterOption _filterOption = TicketFilterOption.active;
+  Set<TicketFilterOption> _selectedFilters = {TicketFilterOption.active};
   String _searchQuery = '';
 
   List<ApiResTicket> get tickets {
@@ -45,14 +44,37 @@ class ListTicketViewmodel extends ChangeNotifier {
       // Búsqueda secundaria opcional por título para flexibilidad
       final matchesTitle = ticket.title.toLowerCase().contains(query);
 
-      final isCancelled = ticket.status.toUpperCase() == "CANCELADO";
+      final statusUpper = ticket.status.toUpperCase();
+      final isCancelled = statusUpper == "CANCELADO";
 
-      // Primero evaluamos el filtro de estado
+      // Filtro de estado (Selección múltiple)
       bool stateMatch = false;
-      if (_filterOption == TicketFilterOption.active) {
-        stateMatch = !isCancelled;
-      } else {
-        stateMatch = isCancelled;
+      for (var filter in _selectedFilters) {
+        bool currentMatch = false;
+        switch (filter) {
+          case TicketFilterOption.active:
+            currentMatch = !isCancelled;
+            break;
+          case TicketFilterOption.cancelled:
+            currentMatch = isCancelled;
+            break;
+          case TicketFilterOption.open:
+            currentMatch = statusUpper == "ABIERTO";
+            break;
+          case TicketFilterOption.process:
+            currentMatch = statusUpper == "PROCESO";
+            break;
+          case TicketFilterOption.pending:
+            currentMatch = statusUpper == "PENDIENTE_VALIDACION";
+            break;
+          case TicketFilterOption.closed:
+            currentMatch = statusUpper == "CERRADO";
+            break;
+        }
+        if (currentMatch) {
+          stateMatch = true;
+          break;
+        }
       }
 
       // Si hay búsqueda, debe coincidir con la unidad (o título) Y con el estado
@@ -90,7 +112,7 @@ class ListTicketViewmodel extends ChangeNotifier {
   }
 
   TicketSortOption get sortOption => _sortOption;
-  TicketFilterOption get filterOption => _filterOption;
+  Set<TicketFilterOption> get selectedFilters => _selectedFilters;
   String get searchQuery => _searchQuery;
 
   void setSortOption(TicketSortOption option) {
@@ -98,8 +120,25 @@ class ListTicketViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFilterOption(TicketFilterOption option) {
-    _filterOption = option;
+  void toggleFilterOption(TicketFilterOption option) {
+    if (_selectedFilters.contains(option)) {
+      if (_selectedFilters.length > 1) {
+        _selectedFilters.remove(option);
+      }
+    } else {
+      // Si seleccionamos 'active', limpiamos los demás estados específicos de activos
+      if (option == TicketFilterOption.active) {
+        _selectedFilters.clear();
+      } else if (option == TicketFilterOption.cancelled) {
+        // Si seleccionamos 'cancelled', limpiamos todo lo demás para evitar confusión
+        _selectedFilters.clear();
+      } else {
+        // Si seleccionamos un estado específico, quitamos 'active' y 'cancelled'
+        _selectedFilters.remove(TicketFilterOption.active);
+        _selectedFilters.remove(TicketFilterOption.cancelled);
+      }
+      _selectedFilters.add(option);
+    }
     notifyListeners();
   }
 
@@ -337,21 +376,8 @@ class ListTicketViewmodel extends ChangeNotifier {
         resetForm();
         notifyListeners();
 
-        String titleAlert = isUpdate? "Ticket actualizado":"Ticket creado";
-        String bodyAlert = isUpdate? "sido actualizado":"sido creado";
-
-        AnimatedResultDialog.showSuccess(
-          context,
-          title: titleAlert,
-          message: "El ticket ha $bodyAlert correctamente.",
-        );
       }catch(e){
         print("[ ERROR ] CREATE TICKET => ${e.toString()}");
-        AnimatedResultDialog.showError(
-            context,
-            title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
-            message: "Error: ${e.toString()}"
-        );
       }
     }
   // endregion BTN SHEET NEW TICKET VIEW
@@ -412,22 +438,11 @@ class ListTicketViewmodel extends ChangeNotifier {
           loadTickets();
           _isLoading = false;
           notifyListeners();
-
-          AnimatedResultDialog.showSuccess(
-            context,
-            title: "Eliminado con éxito",
-            message: "El ticket #$idTicket se eliminó correctamente.",
-          );
-
         }
+
 
       }catch(e){
         print("[ ERROR ] DELETE TICKET ${e.toString()}");
-        AnimatedResultDialog.showError(
-            context,
-            title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
-            message: "Error: ${e.toString()}"
-        );
       }
     }
 
@@ -476,14 +491,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       if (!formKeyStartJob.currentState!.validate()) return;
 
-      if( evidencePhotos.isEmpty ) {
-        AnimatedResultDialog.showError(
-            context,
-            title: "Ninguna evidencia",
-            message: "Por favor, envía al menos una fotografía."
-        );
-        return;
-      }
+      if( evidencePhotos.isEmpty ) return;
 
 
       try{
@@ -528,19 +536,8 @@ class ListTicketViewmodel extends ChangeNotifier {
         _isLoading = false;
         Navigator.pop(context); // Cerramos el panel al terminar
         notifyListeners();
-
-        AnimatedResultDialog.showSuccess(
-          context,
-          title: "Envío de evidencias",
-          message: "Se ha iniciado el trabajo correspondiente al ticket #$idTicket.",
-        );
       }catch(e){
         print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
-        AnimatedResultDialog.showError(
-            context,
-            title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
-            message: "Error: ${e.toString()}"
-        );
       }
     }
 
@@ -552,14 +549,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     if (!formKeyCloseJob.currentState!.validate()) return;
 
-    if( evidenceClosePhotos.isEmpty ){
-      AnimatedResultDialog.showError(
-          context,
-          title: "Ninguna evidencia",
-          message: "Por favor, envía al menos una fotografía."
-      );
-      return;
-    }
+    if( evidenceClosePhotos.isEmpty ) return;
 
 
     try{
@@ -602,22 +592,10 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       loadTickets();
       _isLoading = false;
-      Navigator.pop(context);
+      Navigator.pop(context); // Cerramos el panel al terminar
       notifyListeners();
-
-      AnimatedResultDialog.showSuccess(
-        context,
-        title: "Envío de evidencias\nTicket Cerrado",
-        message: "Se ha cerrado el trabajo correspondiente al ticket #$idTicket.",
-      );
-
     }catch(e){
       print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
-      AnimatedResultDialog.showError(
-          context,
-          title: "Lo sentimos, ocurrió un problema. Intenta nuevamente más tarde.",
-          message: "Error: ${e.toString()}"
-      );
     }
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW

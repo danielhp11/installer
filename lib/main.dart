@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Si el usuario ya está logueado, podrías cambiar LoginView() por ListTicketView() aquí.
-    print("isLogin => ${UserSession().isLogin}");
+    // print("isLogin => ${UserSession().isLogin}");
 
     return MaterialApp(
       title: 'Gestor de Tickets',
