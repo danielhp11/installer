@@ -44,8 +44,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         vm.installerController.text = widget.ticket!.technicianName;
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
-        print("Update => ${widget.ticket!.unitId}");
-        vm.installerId = int.parse(widget.ticket!.unitId);
+        vm.selectedUnitId = widget.ticket!.unitId.toString() != "null"?  int.parse(widget.ticket!.unitId):0;
         // Intentar auto-seleccionar la unidad si ya existe en la lista
         if (vm.units.contains(widget.ticket!.unitId)) {
           vm.setSelectedUnit(unit : widget.ticket!.unitId);
@@ -53,6 +52,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         setState(() {
           isUpdate = true;
         });
+        print("Update ticket # ${widget.ticket?.id} => ${isUpdate}");
       }
     } else {
       // Nuevo: Limpiar campos anteriores
@@ -65,6 +65,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         });
       }
     }
+
   }
 
   @override
@@ -146,8 +147,8 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Crear ticket',
+         Text(
+           isUpdate ? 'Actualizar ticket' : 'Crear ticket',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         IconButton(
