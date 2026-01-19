@@ -26,7 +26,16 @@ class ListTicketViewmodel extends ChangeNotifier {
   String _searchQuery = '';
 
   List<ApiResTicket> get tickets {
+    // Obtenemos la compañía seleccionada actualmente de la sesión
+    final String currentBranch = UserSession().branchRoot.toUpperCase().trim();
+
     List<ApiResTicket> filtered = _tickets.where((ticket) {
+      // 1. Filtrar por compañía seleccionada (Solo mostrar tickets de la empresa actual)
+      final String ticketCompany = (ticket.company ?? '').toUpperCase().trim();
+      if (ticketCompany != currentBranch) {
+        return false;
+      }
+
       final query = _searchQuery.toLowerCase();
 
       // Búsqueda específica por unitId (Nombre de unidad)
@@ -214,11 +223,11 @@ class ListTicketViewmodel extends ChangeNotifier {
   Future<void> loadTickets()async{
     _isLoading = true;
     _errorMessage = null;
+    notifyListeners();
 
     final serv = RequestServ.instance;
 
     try{
-      _tickets.clear();
       List<ApiResTicket>? ticketsRecuperados = await serv.handlingRequestParsed<List<ApiResTicket>>(
         urlParam: RequestServ.urlGetTickets,
         asJson: true,
@@ -230,16 +239,18 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       _tickets = ticketsRecuperados ?? [];
 
-      // Extraer unidades únicas de los tickets existentes inicialmente
-      if (_units.isEmpty) {
-        print("company select ${UserSession().branchRoot} | ${_tickets[0].company}");
-
-        _units = _tickets.map((t) => t.unitId).toSet().toList();
-        _units.sort();
-      }
+      // Actualizar la lista de unidades únicas filtradas por la compañía actual
+      final String currentBranch = UserSession().branchRoot.toUpperCase().trim();
+      _units = _tickets
+          .where((t) => (t.company ?? '').toUpperCase().trim() == currentBranch)
+          .map((t) => t.unitId)
+          .toSet()
+          .toList();
+      _units.sort();
 
     }catch(e){
       _errorMessage = e.toString();
+      print("[ ERR ] LOAD TICKETS: $e");
     }finally{
       _isLoading = false;
       notifyListeners();

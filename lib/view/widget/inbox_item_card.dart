@@ -114,6 +114,8 @@ class InboxItemCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    infoText("Empresa: ${item.company}"),
+                    const SizedBox(height: 16),
                     infoText("Descripción:\n${item.description}"),
                   ],
                 ),
@@ -216,105 +218,37 @@ class InboxItemCard extends StatelessWidget {
     );
   }
 
-  // Widget _infoText(String text) {
-  //   return Text(
-  //     text,
-  //     style: TextStyle(
-  //       fontSize: 12,
-  //       color: Colors.grey.shade600,
-  //       fontWeight: FontWeight.w500,
-  //     ),
-  //   );
-  // }
-
-
-  Widget _buildStatusBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: _getBadgeColor(),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        item.status, // Corregido: Mostrar status en lugar de unitId
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _iconOption({
-    required IconData icon,
-    required VoidCallback onPressed,
-    bool visible = true, // Por defecto es visible
-  }) {
-    if (!visible) return const SizedBox.shrink(); // Si no es visible, no ocupa espacio
-
-    return IconButton(
-      icon: Icon(icon),
-      onPressed: onPressed,
-    );
-  }
-
-
   Color _getBadgeColor() {
     switch (item.status.toUpperCase()) {
-      case statusOpen:
-        return Colors.blue.shade700;
-
       case statusProcess:
         return Colors.orange.shade700;
 
-      // case statusPendingValidation:
-      //   return Colors.purple.shade700;
-
-      case statusFinished:
-        return Colors.green.shade700;
+      case statusPendingValidation:
+        return Colors.deepPurple.shade700;
 
       case statusClosed:
-        return Colors.grey.shade600;
+        return Colors.grey.shade700;
 
       default:
-        return Colors.blueGrey;
+        return Colors.blue.shade700;
     }
   }
 
   Color _getBackgroundColor() {
     switch (item.status) {
-      case statusOpen:
-        return Colors.blue.shade50;
       case statusProcess:
         return Colors.orange.shade50;
-      // case "enRevision":
-      //   return Colors.purple.shade50;
-      case statusFinished:
-        return Colors.green.shade50;
+
+      case statusPendingValidation:
+        return Colors.deepPurple.shade50;
+
       case statusClosed:
         return Colors.grey.shade100;
+
       default:
-        return Colors.white;
+        return Colors.blue.shade50;
     }
   }
-
-  // BorderSide _getBorderSide() {
-  //   switch (item.status) {
-  //     case statusOpen:
-  //       return BorderSide(color: Colors.blue.shade200, width: 2);
-  //     case statusProcess:
-  //       return BorderSide(color: Colors.orange.shade200, width: 2);
-  //     // case "enRevision":
-  //     //   return BorderSide(color: Colors.purple.shade200, width: 2);
-  //     case statusFinished:
-  //       return BorderSide(color: Colors.green.shade200, width: 1);
-  //     case statusClosed:
-  //       return BorderSide(color: Colors.grey.shade300, width: 1);
-  //     default:
-  //       return const BorderSide(color: Colors.transparent);
-  //   }
-  // }
 
   void _showConfirmationDialog(
       BuildContext context,
@@ -338,7 +272,6 @@ class InboxItemCard extends StatelessWidget {
               child: const Text('Aceptar'),
               onPressed: () {
                 onConfirm();
-                // Navigator.of(context).pop();
               },
             ),
           ],
