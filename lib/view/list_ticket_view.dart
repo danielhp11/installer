@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
 import 'package:instaladores_new/view/login_view.dart';
-import 'package:instaladores_new/view/widget/bottom_sheet_utils.dart';
-import 'package:instaladores_new/view/widget/inbox_item_card.dart';
+import 'package:instaladores_new/widget/bottom_sheet_utils.dart';
+import 'package:instaladores_new/widget/inbox_item_card.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:provider/provider.dart';
 

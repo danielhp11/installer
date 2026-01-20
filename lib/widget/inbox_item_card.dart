@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:instaladores_new/service/request_service.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
-import 'package:instaladores_new/view/widget/text_field_widget.dart';
+import 'package:instaladores_new/widget/text_field_widget.dart';
 import 'package:provider/provider.dart';
 
-import '../../service/response_service.dart';
-import '../../viewModel/list_ticket_viewmodel.dart';
+import '../service/response_service.dart';
+import '../viewModel/list_ticket_viewmodel.dart';
 import 'bottom_sheet_utils.dart';
 
 class InboxItemCard extends StatelessWidget {

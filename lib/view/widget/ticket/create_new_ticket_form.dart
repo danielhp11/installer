@@ -1,13 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../service/request_service.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
-import '../selector_field.dart';
-import '../text_field_widget.dart';
+import '../../../widget/selector_field.dart';
+import '../../../widget/text_field_widget.dart';
 
 class CreateNewTicketForm extends StatefulWidget {
 

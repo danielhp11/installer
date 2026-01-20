@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:instaladores_new/view/widget/alert_dialog.dart';
+import 'package:instaladores_new/widget/alert_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 
@@ -284,11 +284,17 @@ class ListTicketViewmodel extends ChangeNotifier {
   // region BTN SHEET CLOSE JOB TICKET VIEW
   final formKeyCloseJob = GlobalKey<FormState>();
   TextEditingController descriptionCloseController = TextEditingController();
+  final ScreenshotController screenshotCloseController = ScreenshotController();
   List<Map<String, String>> evidenceClosePhotos = [];
 
   void resetEvidenceClose() {
     evidenceClosePhotos = [];
     descriptionCloseController.clear();
+    lectorasController.text = "Cargando lectoras...";
+    panicoController.text = "Cargando botón...";
+    _isDownloadEnabled = false;
+    isValidateComponent = false;
+    urlImgValidate = null;
     notifyListeners();
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
@@ -618,7 +624,10 @@ class ListTicketViewmodel extends ChangeNotifier {
             }
           }
         }
-        await uploadPhoto(urlImgValidate!);
+        print("path SS => ${urlImgValidate}");
+        String? Sspath = await uploadPhoto(urlImgValidate!);
+        print("Uploaded SS => $Sspath");
+        await registerEvidence(idTicket.toString(), Sspath!, "PROCESO", evidencePhotos.length);
         // endregion SUBIR FOTO
 
         // region ENVIAR FORMULARIO
@@ -641,9 +650,10 @@ class ListTicketViewmodel extends ChangeNotifier {
       }
     }
 
-    Future<void> takeScreenshotAndSave() async {
+    Future<void> takeScreenshotAndSave( bool isClose ) async {
       try {
-        final image = await screenshotController.capture();
+        final controller = isClose ? screenshotCloseController : screenshotController;
+        final image = await controller.capture();
         if (image == null) return;
 
         final directory = await getTemporaryDirectory();
@@ -654,16 +664,18 @@ class ListTicketViewmodel extends ChangeNotifier {
         await file.writeAsBytes(image);
 
         // Guardamos la ruta
-        urlImgValidate = filePath;
-        // evidencePhotos.add({
-        //   "path": filePath,
-        // });
+        if (isClose) {
+          evidenceClosePhotos.add({"path": filePath});
+        } else {
+          evidencePhotos.add({"path": filePath});
+        }
 
+        urlImgValidate = filePath;
         isValidateComponent = true;
 
         notifyListeners();
       } catch (e) {
-        // Manejo de error si lo necesitas
+        print("Error capturing screenshot: $e");
       }
     }
 
@@ -675,7 +687,23 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     if (!formKeyCloseJob.currentState!.validate()) return;
 
-    if( evidenceClosePhotos.isEmpty ) return;
+    if( evidenceClosePhotos.isEmpty ) {
+      AnimatedResultDialog.showError(
+          context,
+          title: "No hay evidencias",
+          message: "Por lo menos una foto es requerida"
+      );
+      return;
+    }
+
+    if( urlImgValidate == null ) {
+      AnimatedResultDialog.showError(
+          context,
+          title: "No hay validacion",
+          message: "Por favor valida que los coponentes funcionen correctamente"
+      );
+      return;
+    }
 
 
     try{
@@ -703,6 +731,11 @@ class ListTicketViewmodel extends ChangeNotifier {
           }
         }
       }
+
+      print("path SS => ${urlImgValidate}");
+      String? Sspath = await uploadPhoto(urlImgValidate!);
+      print("Uploaded SS => $Sspath");
+      await registerEvidence(idTicket.toString(), Sspath!, "PENDIENTE_VALIDACION", evidenceClosePhotos.length);
       // endregion SUBIR FOTO
 
       // region ENVIAR FORMULARIO
@@ -710,7 +743,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       Map<String, dynamic> data = {
         "technician": ticket?.technicianName,
         "unit": ticket?.unitId,
-        "observations": descriptionStartController.text,
+        "observations": descriptionCloseController.text,
         "timestamp": DateTime.now().toIso8601String()
       };
       await sendFormData(idTicket.toString(), "PENDIENTE_VALIDACION", data);
@@ -746,7 +779,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     final pos = positions.first;
     final deviceId = pos['deviceId'] as int;
-    // print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+    print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
     if( deviceId == int.parse(idTicket) ){
 
       _isDownloadEnabled = true;

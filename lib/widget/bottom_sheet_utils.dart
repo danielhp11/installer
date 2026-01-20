@@ -3,7 +3,7 @@ import 'package:instaladores_new/view/widget/ticket/create_new_ticket_form.dart'
 import 'package:instaladores_new/view/widget/ticket_job/close_job_ticket.dart';
 import 'package:instaladores_new/view/widget/ticket_job/start_job_ticket.dart';
 
-import '../../service/response_service.dart';
+import '../service/response_service.dart';
 
 void showFuelFormBottomSheet(
     BuildContext context,

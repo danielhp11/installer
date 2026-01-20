@@ -5,8 +5,8 @@ import 'package:screenshot/screenshot.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
-import '../evidence_grid.dart';
-import '../text_field_widget.dart';
+import '../../../widget/evidence_grid.dart';
+import '../../../widget/text_field_widget.dart';
 
 class StartJobTicket extends StatefulWidget {
 
@@ -88,7 +88,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                                 child: ElevatedButton.icon(
                                   onPressed: viewModel.isDownloadEnabled
                                     ? () async {
-                                        await viewModel.takeScreenshotAndSave();
+                                        await viewModel.takeScreenshotAndSave(false);
                                         if (mounted && viewModel.urlImgValidate != null) {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             const SnackBar(content: Text('Evidencia capturada con éxito')),
