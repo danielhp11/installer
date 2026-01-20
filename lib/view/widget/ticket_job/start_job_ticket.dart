@@ -25,14 +25,21 @@ class _StartJobTicket extends State<StartJobTicket> {
     // Limpiamos las evidencias previas al iniciar la vista
     Future.microtask(() {
       context.read<ListTicketViewmodel>().resetEvidenceStart();
-      context.read<ListTicketViewmodel>().initSocket();
+      context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId);
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
 
     final viewModel = context.watch<ListTicketViewmodel>();
+
+    final ButtonStyle styleValidateBtn = ElevatedButton.styleFrom(
+        textStyle: const TextStyle(fontSize: 12),
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+    );
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -62,15 +69,35 @@ class _StartJobTicket extends State<StartJobTicket> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función", readOnly: true ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función", readOnly: true ),
+                          ),
+                          const SizedBox(),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                                onPressed: null,
+                              // onPressed: () {
+                              //   print("Download pressed");
+                              // },
+                              icon: const Icon(Icons.download),
+                              label: const Text("Download"),
+                              style: styleValidateBtn,
+                            ),
+                          )
+                        ],
+                      ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          infoText(
-                              text: "Lectoras",
-                              styles: const TextStyle(
-                                fontSize: 17,
-                              )
+                          Expanded(
+                            child:  infoText(
+                                text: "Lectoras",
+                                styles: const TextStyle(
+                                  fontSize: 17,
+                                )
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -90,10 +117,12 @@ class _StartJobTicket extends State<StartJobTicket> {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          infoText(
-                              text: "Botón de pánico",
-                              styles: const TextStyle(
-                                fontSize: 17,
+                          Expanded(
+                              child: infoText(
+                                  text: "Botón de pánico",
+                                  styles: const TextStyle(
+                                    fontSize: 17,
+                                  )
                               )
                           ),
 

@@ -22,6 +22,13 @@ class ListTicketViewmodel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
 
+  @override
+  void dispose() {
+    _socket.disconnect();
+    super.dispose();
+  }
+
+
   // region TICKET VIEW
   List<ApiResTicket> _tickets = [];
   TicketSortOption _sortOption = TicketSortOption.dateDesc;
@@ -193,17 +200,19 @@ class ListTicketViewmodel extends ChangeNotifier {
   String? get selectedUnit => _selectedUnit;
   int? selectedUnitId; // ID de la unidad seleccionada
 
-  void setSelectedUnit({String? unit, int? index}) {
+  void setSelectedUnit({String? unit, required String company, bool isInit = false }) {
     _selectedUnit = unit;
+    String textText = isInit? "Init load":"Change";
+    print("$textText");
+    List<dynamic> currentList = company == "BUSMEN" ? localUnitBusmen : localUnitTemsa;
+    currentList.forEach((things){
+      bool validate = isInit? things.id == unit : things.name == unit;
 
-    // Solo buscamos el ID si el índice es válido
-    if (unit != null && index != null && index >= 0) {
-      List<dynamic> currentList = UserSession().branchRoot == "BUSMEN" ? localUnitBusmen : localUnitTemsa;
-      if (index < currentList.length) {
-        selectedUnitId = currentList[index].id;
-        print("Unidad seleccionada ID: $selectedUnitId");
+      if(validate){
+        print("unit search => ${things.name} | id => ${things.id}");
+        selectedUnitId = things.id;
       }
-    }
+    });
 
     if (unit != null) {
       unitController.text = unit;
@@ -251,12 +260,15 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController panicoController = TextEditingController(text: "Cargando botón...");
 
   List<Map<String, String>> evidencePhotos = [];
+  bool _isDownloadEnabled = false;
+  bool get isDownloadEnabled => _isDownloadEnabled;
 
   void resetEvidenceStart() {
     evidencePhotos = [];
     descriptionStartController.clear();
     lectorasController.text = "Cargando lectoras...";
     panicoController.text = "Cargando botón...";
+    _isDownloadEnabled = false;
     notifyListeners();
   }
   // endregion BTN SHEET START JOB TICKET VIEW
@@ -630,17 +642,17 @@ class ListTicketViewmodel extends ChangeNotifier {
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
 
   // region SOCKET
-  void initSocket() {
+  void initSocket(String idTicket) {
     lectorasController.text = "Buscando unidad...";
     panicoController.text = "Buscando unidad...";
     _socket.onUnitUpdate = (data) {
-      _updateUnitPosition(data);
+      _updateUnitPosition(data, idTicket);
     };
 
     _socket.connect();
   }
 
-  Future<void> _updateUnitPosition(Map<String, dynamic> data) async {
+  Future<void> _updateUnitPosition(Map<String, dynamic> data, String idTicket) async {
 
     if (!data.containsKey('positions')) return;
 
@@ -649,11 +661,24 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     final pos = positions.first;
     final deviceId = pos['deviceId'] as int;
-    print("device id socket => $deviceId");
+    if( deviceId == selectedUnitId ){
+
+      lectorasController.text = "Esperando evento...";
+      panicoController.text = "Esperando evento...";
+      _isDownloadEnabled = true;
+      notifyListeners();
+      print("device id socket => $deviceId | search id => $idTicket => ${deviceId == selectedUnitId}");
+      print(pos);
+    }
+
   }
 
   void disconnectSocket() {
     _socket.disconnect();
+    // Limpiamos los textos al desconectar para que no queden valores viejos
+    lectorasController.text = "Cargando lectoras...";
+    panicoController.text = "Cargando botón...";
+    _isDownloadEnabled = false;
     notifyListeners();
   }
   // endregion SOCKET

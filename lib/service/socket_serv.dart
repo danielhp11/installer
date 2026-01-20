@@ -10,6 +10,7 @@ class SocketServ {
 
   WebSocket? _ws;
   String? _cookie;
+  bool _intentionalDisconnect = false;
 
   Function(Map<String, dynamic> data)? onUnitUpdate;
 
@@ -21,13 +22,16 @@ class SocketServ {
   Future<void> connect() async {
     if (_ws != null) return;
 
+    _intentionalDisconnect = false;
+
     if (_cookie == null) {
       await loadSession();
       if (_cookie == null) return;
     }
     // "wss://rastreotemsa.geovoy.com/api/socket"
-    final uri = UserSession().branchRoot == "BUSMEN"? Uri.parse("wss://rastreobusmen.geovoy.com/api/socket"):
-    Uri.parse("wss://rastreotemsa.geovoy.com/api/socket");
+    // final uri = UserSession().branchRoot == "BUSMEN"? Uri.parse("wss://rastreobusmen.geovoy.com/api/socket"):
+    // Uri.parse("wss://rastreotemsa.geovoy.com/api/socket");
+    final uri = Uri.parse("wss://rastreobusmen.geovoy.com/api/socket");
 
     try {
       print("Intentando conectar WebSocket...");
@@ -74,25 +78,32 @@ class SocketServ {
         onDone: () {
           print("WS DESCONECTADO");
           _ws = null;
-          reconnect();
+          if (!_intentionalDisconnect) {
+            reconnect();
+          }
         },
 
         onError: (error) {
           print("ERROR EN WS => $error");
           _ws = null;
-          reconnect();
+          if (!_intentionalDisconnect) {
+            reconnect();
+          }
         },
       );
 
     } catch (e) {
       print("ERROR AL CONECTAR WS => $e");
-      reconnect();
+      if (!_intentionalDisconnect) {
+        reconnect();
+      }
     }
   }
 
   /// Intentos automáticos cada 3 segundos
   void reconnect() {
     Future.delayed(const Duration(seconds: 3), () {
+      if (_intentionalDisconnect) return;
       print("Reintentando conexión WebSocket...");
       connect();
     });
@@ -100,6 +111,7 @@ class SocketServ {
 
   void disconnect() {
     print("Cerrando WebSocket...");
+    _intentionalDisconnect = true;
     _ws?.close();
     _ws = null;
   }

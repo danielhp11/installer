@@ -48,7 +48,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         vm.selectedUnitId = widget.ticket!.unitId.toString() != "null"?  int.parse(widget.ticket!.unitId):0;
         // Intentar auto-seleccionar la unidad si ya existe en la lista
         if (vm.units.contains(widget.ticket!.unitId)) {
-          vm.setSelectedUnit(unit : widget.ticket!.unitId);
+          vm.setSelectedUnit(unit : widget.ticket!.unitId, company: widget.ticket!.company!, isInit: true);
         }
         setState(() {
           isUpdate = true;
@@ -321,8 +321,9 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                       leading: const Icon(Icons.directions_car),
                       title: Text(unit),
                       onTap: () {
-                        // print(unit);
-                        vm.setSelectedUnit(unit: unit, index: index);
+                        print(unit);
+                        print(index);
+                        vm.setSelectedUnit(unit: unit, company: widget.ticket!.company!);
                         Navigator.pop(context);
                       },
                     );
