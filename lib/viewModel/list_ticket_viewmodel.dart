@@ -642,14 +642,14 @@ class ListTicketViewmodel extends ChangeNotifier {
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
 
   // region SOCKET
-  void initSocket(String idTicket) {
+  void initSocket(String idTicket, String company) {
     lectorasController.text = "Buscando unidad...";
     panicoController.text = "Buscando unidad...";
     _socket.onUnitUpdate = (data) {
       _updateUnitPosition(data, idTicket);
     };
 
-    _socket.connect();
+    _socket.connect( company );
   }
 
   Future<void> _updateUnitPosition(Map<String, dynamic> data, String idTicket) async {
@@ -661,13 +661,14 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     final pos = positions.first;
     final deviceId = pos['deviceId'] as int;
-    if( deviceId == selectedUnitId ){
+    // print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+    if( deviceId == int.parse(idTicket) ){
 
       lectorasController.text = "Esperando evento...";
       panicoController.text = "Esperando evento...";
       _isDownloadEnabled = true;
       notifyListeners();
-      print("device id socket => $deviceId | search id => $idTicket => ${deviceId == selectedUnitId}");
+      print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
       print(pos);
     }
 

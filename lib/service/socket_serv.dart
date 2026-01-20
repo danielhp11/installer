@@ -14,28 +14,29 @@ class SocketServ {
 
   Function(Map<String, dynamic> data)? onUnitUpdate;
 
-  Future<void> loadSession() async {
+  Future<void> loadSession(bool isBusmen) async {
     final serv = RequestServ.instance;
-    _cookie = await serv.sessionGeovoySistem();
+    _cookie = await serv.sessionGeovoySistem(isBusmen);
   }
 
-  Future<void> connect() async {
+  Future<void> connect(String company) async {
     if (_ws != null) return;
 
     _intentionalDisconnect = false;
 
     if (_cookie == null) {
-      await loadSession();
+      await loadSession( company.toUpperCase() == "BUSMEN" );
       if (_cookie == null) return;
     }
     // "wss://rastreotemsa.geovoy.com/api/socket"
-    // final uri = UserSession().branchRoot == "BUSMEN"? Uri.parse("wss://rastreobusmen.geovoy.com/api/socket"):
-    // Uri.parse("wss://rastreotemsa.geovoy.com/api/socket");
-    final uri = Uri.parse("wss://rastreobusmen.geovoy.com/api/socket");
+    final uri = company.toUpperCase() == "BUSMEN"? Uri.parse("wss://rastreobusmen.geovoy.com/api/socket"):
+    Uri.parse("wss://rastreotemsa.geovoy.com/api/socket");
+    // final uri = Uri.parse("wss://rastreobusmen.geovoy.com/api/socket");
 
     try {
       print("Intentando conectar WebSocket...");
       print("$uri");
+      print("_cookie $_cookie");
 
       _ws = await WebSocket.connect(
         uri.toString(),
@@ -79,7 +80,7 @@ class SocketServ {
           print("WS DESCONECTADO");
           _ws = null;
           if (!_intentionalDisconnect) {
-            reconnect();
+            reconnect(company);
           }
         },
 
@@ -87,7 +88,7 @@ class SocketServ {
           print("ERROR EN WS => $error");
           _ws = null;
           if (!_intentionalDisconnect) {
-            reconnect();
+            reconnect(company);
           }
         },
       );
@@ -95,17 +96,17 @@ class SocketServ {
     } catch (e) {
       print("ERROR AL CONECTAR WS => $e");
       if (!_intentionalDisconnect) {
-        reconnect();
+        reconnect(company);
       }
     }
   }
 
   /// Intentos automáticos cada 3 segundos
-  void reconnect() {
+  void reconnect(String company) {
     Future.delayed(const Duration(seconds: 3), () {
       if (_intentionalDisconnect) return;
       print("Reintentando conexión WebSocket...");
-      connect();
+      connect(company);
     });
   }
 
@@ -113,6 +114,7 @@ class SocketServ {
     print("Cerrando WebSocket...");
     _intentionalDisconnect = true;
     _ws?.close();
+    _cookie = null;
     _ws = null;
   }
 

@@ -154,11 +154,14 @@ class RequestServ {
 // endregion Units
 
   // region Installer COOKIE
-  Future<String?> sessionGeovoySistem() async {
+  Future<String?> sessionGeovoySistem(bool isBusmen) async {
     try {
       var client = http.Client();
+      // https://rastreotemsa.geovoy.com
+      String url = isBusmen? "https://rastreobusmen.geovoy.com/api/session":"https://rastreotemsa.geovoy.com/api/session" ;
+      print("url cookir => $isBusmen");
       var response = await client.post(
-        Uri.parse("https://rastreobusmen.geovoy.com/api/session"),
+        Uri.parse(url),
         body: {
           "email": "usuariosapp",
           "password": "usuarios0904",

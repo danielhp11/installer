@@ -25,7 +25,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     // Limpiamos las evidencias previas al iniciar la vista
     Future.microtask(() {
       context.read<ListTicketViewmodel>().resetEvidenceStart();
-      context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId);
+      context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId, widget.ticket.company!);
     });
   }
 
@@ -77,10 +77,13 @@ class _StartJobTicket extends State<StartJobTicket> {
                           const SizedBox(),
                           Expanded(
                             child: ElevatedButton.icon(
-                                onPressed: null,
-                              // onPressed: () {
-                              //   print("Download pressed");
-                              // },
+                              // Aquí es donde vinculamos el estado del ViewModel
+                              onPressed: viewModel.isDownloadEnabled 
+                                ? () {
+                                    print("Download pressed");
+                                    // Aquí puedes llamar a una función en tu viewModel si la necesitas
+                                  } 
+                                : null, // Si es null, el botón se deshabilita automáticamente
                               icon: const Icon(Icons.download),
                               label: const Text("Download"),
                               style: styleValidateBtn,
