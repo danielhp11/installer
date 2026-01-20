@@ -11,8 +11,10 @@ void showFuelFormBottomSheet(
     ) {
   showModalBottomSheet(
     context: context,
-    isScrollControlled: true, // 🔥 IMPORTANTE
+    isScrollControlled: true,
     useSafeArea: true,
+    isDismissible: false,
+    enableDrag: false,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -31,6 +33,8 @@ void showStarJobFormBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    isDismissible: false,
+    enableDrag: false,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

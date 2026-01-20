@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../service/request_service.dart';
 import '../service/response_service.dart';
+import '../service/socket_serv.dart';
 import '../service/user_session_service.dart';
 
 enum TicketSortOption { dateDesc, dateAsc, status, unit }
@@ -15,6 +16,8 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
+
+  final _socket = SocketServ.instance;
 
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -244,11 +247,16 @@ class ListTicketViewmodel extends ChangeNotifier {
   // region BTN SHEET START JOB TICKET VIEW
   final formKeyStartJob = GlobalKey<FormState>();
   TextEditingController descriptionStartController = TextEditingController();
+  TextEditingController lectorasController = TextEditingController(text: "Cargando lectoras...");
+  TextEditingController panicoController = TextEditingController(text: "Cargando botón...");
+
   List<Map<String, String>> evidencePhotos = [];
 
   void resetEvidenceStart() {
     evidencePhotos = [];
     descriptionStartController.clear();
+    lectorasController.text = "Cargando lectoras...";
+    panicoController.text = "Cargando botón...";
     notifyListeners();
   }
   // endregion BTN SHEET START JOB TICKET VIEW
@@ -563,8 +571,6 @@ class ListTicketViewmodel extends ChangeNotifier {
         print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
       }
     }
-
-
   // endregion BTN SHEET START JOB TICKET VIEW
 
   // region BTN SHEET CLOSE JOB TICKET VIEW
@@ -623,6 +629,36 @@ class ListTicketViewmodel extends ChangeNotifier {
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
 
+  // region SOCKET
+  void initSocket() {
+    lectorasController.text = "Buscando unidad...";
+    panicoController.text = "Buscando unidad...";
+    _socket.onUnitUpdate = (data) {
+      _updateUnitPosition(data);
+    };
+
+    _socket.connect();
+  }
+
+  Future<void> _updateUnitPosition(Map<String, dynamic> data) async {
+
+    if (!data.containsKey('positions')) return;
+
+    final positions = data['positions'];
+    if (positions is! List || positions.isEmpty) return;
+
+    final pos = positions.first;
+    final deviceId = pos['deviceId'] as int;
+    print("device id socket => $deviceId");
+  }
+
+  void disconnectSocket() {
+    _socket.disconnect();
+    notifyListeners();
+  }
+  // endregion SOCKET
+
+  // region UTILITIES
   // 1.
   Future<void> updateStatus(String ticketId, String status, String changedBy) async {
     // print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/status");
@@ -708,5 +744,6 @@ class ListTicketViewmodel extends ChangeNotifier {
     );
     // print(response);
   }
+  // endregion UTILITIES
 
 }

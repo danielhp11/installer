@@ -25,6 +25,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     // Limpiamos las evidencias previas al iniciar la vista
     Future.microtask(() {
       context.read<ListTicketViewmodel>().resetEvidenceStart();
+      context.read<ListTicketViewmodel>().initSocket();
     });
   }
 
@@ -47,7 +48,7 @@ class _StartJobTicket extends State<StartJobTicket> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _header(),
+              _header( viewModel ),
               const SizedBox(height: 16),
               textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company.toString(), readOnly: true ),
               const SizedBox(height: 16),
@@ -59,10 +60,57 @@ class _StartJobTicket extends State<StartJobTicket> {
               const SizedBox(height: 10),
               _card(
                 child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      infoText(text: "Lectoras"),
+                      textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función", readOnly: true ),
                       const SizedBox(height: 10),
-                      infoText(text: "Botón de pánico")
+                      Row(
+                        children: [
+                          infoText(
+                              text: "Lectoras",
+                              styles: const TextStyle(
+                                fontSize: 17,
+                              )
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextFormField(
+                              controller: viewModel.lectorasController,
+                              readOnly: true,
+                              keyboardType: TextInputType.text,
+                              decoration: const InputDecoration(
+                                labelText: "Estado",
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          infoText(
+                              text: "Botón de pánico",
+                              styles: const TextStyle(
+                                fontSize: 17,
+                              )
+                          ),
+
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextFormField(
+                              controller: viewModel.panicoController,
+                              readOnly: true,
+                              keyboardType: TextInputType.text,
+                              decoration: const InputDecoration(
+                                labelText: "Estado",
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
                     ],
                 )
               ),
@@ -108,7 +156,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     );
   }
 
-  Widget _header() {
+  Widget _header( ListTicketViewmodel vm ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -118,7 +166,10 @@ class _StartJobTicket extends State<StartJobTicket> {
         ),
         IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => {
+            vm.disconnectSocket(),
+            Navigator.pop(context)
+          },
         )
       ],
     );

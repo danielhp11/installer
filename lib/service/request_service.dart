@@ -153,4 +153,39 @@ class RequestServ {
 
 // endregion Units
 
+  // region Installer COOKIE
+  Future<String?> sessionGeovoySistem() async {
+    try {
+      var client = http.Client();
+      var response = await client.post(
+        Uri.parse("https://rastreobusmen.geovoy.com/api/session"),
+        body: {
+          "email": "usuariosapp",
+          "password": "usuarios0904",
+        },
+      );
+
+      if (response.statusCode != 200) {
+        print("Error: ${response.statusCode}");
+        return null;
+      }
+
+      String? rawCookie = response.headers['set-cookie'];
+
+      if (rawCookie != null) {
+        String? parsedCookie = rawCookie.split(";").first;
+        // UserSession.token = parsedCookie;
+
+        return parsedCookie;
+      }
+
+      return null;
+
+    } catch (e) {
+      print("Error sessionGeovoySistem: $e");
+      return null;
+    }
+  }
+  // region Installer COOKIE
+
 }
