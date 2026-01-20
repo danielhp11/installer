@@ -43,6 +43,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
       if (mounted) {
         vm.companyController.text = widget.ticket!.company ?? '';
         vm.installerController.text = widget.ticket!.technicianName;
+        print("installerController =>${vm.installerController.text}");
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
         vm.selectedUnitId = widget.ticket!.unitId.toString() != "null"?  int.parse(widget.ticket!.unitId):0;
@@ -61,6 +62,12 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         vm.resetForm();
         // Valor por defecto basado en la rama seleccionada
         vm.companyController.text = UserSession().branchRoot;
+        if(!UserSession().isMaster){
+          vm.installerId = UserSession().idUser;
+          vm.installerController.text = UserSession().nameUser;
+
+        }
+        print("installerController =>${vm.installerController.text} | ");
         setState(() {
           isUpdate = false;
         });
@@ -323,7 +330,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                       onTap: () {
                         print(unit);
                         print(index);
-                        vm.setSelectedUnit(unit: unit, company: widget.ticket!.company!);
+                        vm.setSelectedUnit(unit: unit, company: vm.companyController.text, isInit: false);
                         Navigator.pop(context);
                       },
                     );

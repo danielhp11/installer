@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:instaladores_new/view/widget/alert_dialog.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
 
 import '../service/request_service.dart';
 import '../service/response_service.dart';
@@ -258,6 +262,8 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController descriptionStartController = TextEditingController();
   TextEditingController lectorasController = TextEditingController(text: "Cargando lectoras...");
   TextEditingController panicoController = TextEditingController(text: "Cargando botón...");
+  final ScreenshotController screenshotController = ScreenshotController();
+
 
   List<Map<String, String>> evidencePhotos = [];
   bool _isDownloadEnabled = false;
@@ -269,6 +275,8 @@ class ListTicketViewmodel extends ChangeNotifier {
     lectorasController.text = "Cargando lectoras...";
     panicoController.text = "Cargando botón...";
     _isDownloadEnabled = false;
+    isValidateComponent = false;
+    urlImgValidate = null;
     notifyListeners();
   }
   // endregion BTN SHEET START JOB TICKET VIEW
@@ -284,6 +292,13 @@ class ListTicketViewmodel extends ChangeNotifier {
     notifyListeners();
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
+
+  // region SOCKET
+  bool isValidateComponent = false;
+  String? urlImgValidate;
+  // endregion SOCKET
+
+  /*================ FUNCTIONS =================*/
 
   // region TICKET VIEW
   Future<void> loadTickets()async{
@@ -353,14 +368,37 @@ class ListTicketViewmodel extends ChangeNotifier {
   // region BTN SHEET NEW TICKET VIEW
     Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
 
-      if (!formKey.currentState!.validate()) return;
+      if (!formKey.currentState!.validate()) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "Campos incompletos",
+            message: "Es necesario agregar una descripciòn"
+        );
+        return;
+      }
 
-      if (installerController.text.isEmpty) return;
+      if (installerController.text.isEmpty && installerId == 0 ) {
+        print("installerController => ${installerController.text}");
+        print("installerId => ${installerId}");
+        AnimatedResultDialog.showError(
+            context,
+            title: "Campos incompletos",
+            message: "Es necesario agregar un instalador"
+        );
+        return;
+      }
 
-      if (unitController.text.isEmpty) return;
+      if (unitController.text.isEmpty) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "Campos incompletos",
+            message: "Es necesario agregar una unidad"
+        );
+        return;
+      }
 
-      _isLoading = true;
-      _errorMessage = null;
+      // _isLoading = true;
+      // _errorMessage = null;
 
       final serv = RequestServ.instance;
 
@@ -444,6 +482,7 @@ class ListTicketViewmodel extends ChangeNotifier {
             _selectedInstaller = _installers.firstWhere(
               (element) => element.full_name.toLowerCase() == installerController.text.toLowerCase()
             );
+            print("_selectedInstaller => $_selectedInstaller");
           } catch (_) {
             // No se encontró coincidencia exacta
           }
@@ -534,7 +573,23 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       if (!formKeyStartJob.currentState!.validate()) return;
 
-      if( evidencePhotos.isEmpty ) return;
+      if( evidencePhotos.isEmpty ) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay evidencias",
+            message: "Por lo menos una foto es requerida"
+        );
+        return;
+      }
+
+      if( urlImgValidate == null ) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay validacion",
+            message: "Por favor valida que los coponentes funcionen correctamente"
+        );
+        return;
+      }
 
 
       try{
@@ -555,6 +610,7 @@ class ListTicketViewmodel extends ChangeNotifier {
           final photoData = evidencePhotos[i];
           String? path = photoData['path'];
           if (path != null) {
+            print("path => $path");
             String? imageUrl = await uploadPhoto(path);
             if (imageUrl != null) {
               print("Uploaded: $imageUrl");
@@ -562,6 +618,7 @@ class ListTicketViewmodel extends ChangeNotifier {
             }
           }
         }
+        await uploadPhoto(urlImgValidate!);
         // endregion SUBIR FOTO
 
         // region ENVIAR FORMULARIO
@@ -583,6 +640,34 @@ class ListTicketViewmodel extends ChangeNotifier {
         print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
       }
     }
+
+    Future<void> takeScreenshotAndSave() async {
+      try {
+        final image = await screenshotController.capture();
+        if (image == null) return;
+
+        final directory = await getTemporaryDirectory();
+        final filePath =
+            '${directory.path}/validate_${DateTime.now().millisecondsSinceEpoch}.png';
+
+        final file = File(filePath);
+        await file.writeAsBytes(image);
+
+        // Guardamos la ruta
+        urlImgValidate = filePath;
+        // evidencePhotos.add({
+        //   "path": filePath,
+        // });
+
+        isValidateComponent = true;
+
+        notifyListeners();
+      } catch (e) {
+        // Manejo de error si lo necesitas
+      }
+    }
+
+
   // endregion BTN SHEET START JOB TICKET VIEW
 
   // region BTN SHEET CLOSE JOB TICKET VIEW
@@ -664,12 +749,26 @@ class ListTicketViewmodel extends ChangeNotifier {
     // print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
     if( deviceId == int.parse(idTicket) ){
 
-      lectorasController.text = "Esperando evento...";
-      panicoController.text = "Esperando evento...";
       _isDownloadEnabled = true;
       notifyListeners();
       print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
-      print(pos);
+      // region panic btn
+      bool btnPanicEventOne = pos["attributes"]["di2"] != "null" && pos["attributes"]["di2"] == "true" ;
+      bool btnPanicEventTwo = pos["attributes"]["in2"] != "null" && pos["attributes"]["in2"] == "true" ;
+      print("${pos["attributes"]["di2"]} $btnPanicEventOne");
+      print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
+      print("${btnPanicEventOne || btnPanicEventTwo}");
+
+      panicoController.text = btnPanicEventOne || btnPanicEventTwo? "Verificación correcta" :"Esperando evento...";
+      // endregion panic btn
+
+      // region reds
+      print("reds => ${pos["attributes"]["commandResult"]}");
+      // print(pos["attributes"]["commandResult"] != "");
+      bool isRead = pos["attributes"]["commandResult"] != "null" && pos["attributes"]["commandResult"] == "true";
+      print("isRead => $isRead");
+      lectorasController.text = isRead? "Verificación correcta" :"Esperando evento...";
+      // region reds
     }
 
   }
