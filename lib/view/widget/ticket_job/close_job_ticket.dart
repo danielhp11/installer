@@ -27,8 +27,10 @@ class _CloseJobTicket extends State<CloseJobTicket> {
     super.initState();
     // Limpiamos las evidencias previas al iniciar la vista
     Future.microtask(() {
+      context.read<ListTicketViewmodel>().isLoadingClose = true;
       context.read<ListTicketViewmodel>().resetEvidenceClose();
       context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId.toString(), widget.ticket.company.toString());
+      context.read<ListTicketViewmodel>().isLoadingClose = false;
     });
   }
 

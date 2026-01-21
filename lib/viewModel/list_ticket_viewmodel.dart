@@ -176,6 +176,8 @@ class ListTicketViewmodel extends ChangeNotifier {
   List<dynamic> localUnitBusmen = [];
   List<dynamic> localUnitTemsa = [];
 
+  bool isLoadNewUpdate = false;
+
   int installerId = 0;
   List<ApiResInstaller> _installers = [];
   List<ApiResInstaller> get installers => _installers;
@@ -204,7 +206,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   void setSelectedUnit({String? unit, required String company, bool isInit = false }) {
     _selectedUnit = unit;
-    String textText = isInit? "Init load":"Change";
+    // String textText = isInit? "Init load":"Change";
 
     List<dynamic> currentList = company == "BUSMEN" ? localUnitBusmen : localUnitTemsa;
     currentList.forEach((things){
@@ -266,6 +268,7 @@ class ListTicketViewmodel extends ChangeNotifier {
   List<Map<String, String>> evidencePhotos = [];
   bool _isDownloadEnabled = false;
   bool get isDownloadEnabled => _isDownloadEnabled;
+  bool isLoadingStart = false;
 
   void resetEvidenceStart() {
     evidencePhotos = [];
@@ -284,6 +287,8 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController descriptionCloseController = TextEditingController();
   final ScreenshotController screenshotCloseController = ScreenshotController();
   List<Map<String, String>> evidenceClosePhotos = [];
+  bool isLoadingClose = false;
+
 
   void resetEvidenceClose() {
     evidenceClosePhotos = [];

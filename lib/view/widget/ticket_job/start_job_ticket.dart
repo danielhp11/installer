@@ -27,8 +27,10 @@ class _StartJobTicket extends State<StartJobTicket> {
     super.initState();
     // Limpiamos las evidencias previas al iniciar la vista
     Future.microtask(() {
+      context.read<ListTicketViewmodel>().isLoadingStart = true;
       context.read<ListTicketViewmodel>().resetEvidenceStart();
       context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId, widget.ticket.company!);
+      context.read<ListTicketViewmodel>().isLoadingStart = false;
     });
   }
 
@@ -37,6 +39,8 @@ class _StartJobTicket extends State<StartJobTicket> {
   Widget build(BuildContext context) {
 
     final viewModel = context.watch<ListTicketViewmodel>();
+
+    if (viewModel.isLoadingStart) return const Center(child: CircularProgressIndicator());
 
     final ButtonStyle styleValidateBtn = ElevatedButton.styleFrom(
         textStyle: const TextStyle(fontSize: 12),

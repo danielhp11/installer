@@ -33,6 +33,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     final vm = context.read<ListTicketViewmodel>();
     
     // Cargamos instaladores
+    vm.isLoadNewUpdate = true;
     vm.getInstaller();
     
     // Cargamos y combinamos unidades de Busmen y Temsa
@@ -73,12 +74,15 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         });
       }
     }
-
+    vm.isLoadNewUpdate = false;
   }
 
   @override
   Widget build(BuildContext context) {
+
     final viewModel = context.watch<ListTicketViewmodel>();
+
+    if (viewModel.isLoadNewUpdate) return const Center(child: CircularProgressIndicator());
 
     String textTitle = isUpdate ? 'Actualizar ticket' : 'Crear ticket';
 
