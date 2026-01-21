@@ -33,6 +33,23 @@ class InboxItemCard extends StatelessWidget {
     final viewModel = context.watch<ListTicketViewmodel>();
     // print("=> InboxItemCard: ${item.history?.last.notes}");
 
+    // print(item.create_at);
+
+    String formatDateManual(String isoDate) {
+      final DateTime d = DateTime.parse(isoDate);
+
+      String twoDigits(int n) => n.toString().padLeft(2, '0');
+
+      return "${twoDigits(d.day)}/"
+          "${twoDigits(d.month)}/"
+          "${d.year.toString().substring(2)}";
+          // "${d.year.toString().substring(2)} "
+          // "${twoDigits(d.hour)}:"
+          // "${twoDigits(d.minute)}:"
+          // "${twoDigits(d.second)}";
+    }
+
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -116,10 +133,12 @@ class InboxItemCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    infoText(text: "Fecha creacion:\n${formatDateManual(item.create_at!)}"),
+                    const SizedBox(height: 6),
                     infoText(text: "Empresa: ${item.company}"),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 6),
                     infoText(text: "Descripción:\n${item.description}"),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 6),
                     isCancel? infoText(text: "${item.history?.last.notes}"):SizedBox.shrink(),
                   ],
                 ),

@@ -38,6 +38,8 @@ class ListTicketViewmodel extends ChangeNotifier {
   TicketSortOption _sortOption = TicketSortOption.dateDesc;
   Set<TicketFilterOption> _selectedFilters = {TicketFilterOption.active};
   String _searchQuery = '';
+  TextEditingController controllerDateStart = TextEditingController();
+  TextEditingController controllerDateEnd = TextEditingController();
 
   List<ApiResTicket> get tickets {
 
@@ -318,8 +320,23 @@ class ListTicketViewmodel extends ChangeNotifier {
     final serv = RequestServ.instance;
 
     try{
+
+      String formatDateForApi(String dateStr) {
+        if (dateStr.isEmpty || !dateStr.contains('/')) return dateStr;
+        List<String> parts = dateStr.split('/');
+        if (parts.length != 3) return dateStr;
+        // parts[0] = dd, parts[1] = mm, parts[2] = yyyy
+        return "${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}";
+      }
+
+      Map<String, dynamic> data = {
+        "start_date": formatDateForApi(controllerDateStart.text),
+        "end_date": formatDateForApi(controllerDateEnd.text),
+      };
+
       List<ApiResTicket>? ticketsRecuperados = await serv.handlingRequestParsed<List<ApiResTicket>>(
         urlParam: RequestServ.urlGetTickets,
+        params: data,
         asJson: true,
         fromJson: (json) {
           final list = json as List<dynamic>;
