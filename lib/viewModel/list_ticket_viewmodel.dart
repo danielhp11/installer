@@ -672,9 +672,9 @@ class ListTicketViewmodel extends ChangeNotifier {
           context,
           title: "No hay validacion",
           message: "Por favor valida que los coponentes funcionen correctamente"
-      );
-      return;
-    }
+        );
+        return;
+      }
 
 
     try{
@@ -889,11 +889,13 @@ class ListTicketViewmodel extends ChangeNotifier {
       final file = File(filePath);
       await file.writeAsBytes(image);
 
-      // Guardamos la ruta
+      // Guardamos la ruta con el origen SCREENSHOT
       if (isClose) {
-        evidenceClosePhotos.add({"path": filePath});
+        evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+        evidenceClosePhotos.add({"path": filePath, "source": "SCREENSHOT"});
       } else {
-        evidencePhotos.add({"path": filePath});
+        evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+        evidencePhotos.add({"path": filePath, "source": "SCREENSHOT"});
       }
 
       urlImgValidate = filePath;
@@ -903,6 +905,17 @@ class ListTicketViewmodel extends ChangeNotifier {
     } catch (e) {
       print("Error capturing screenshot: $e");
     }
+  }
+
+  void clearValidation(bool isClose) {
+    if (isClose) {
+      evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+    } else {
+      evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+    }
+    urlImgValidate = null;
+    isValidateComponent = false;
+    notifyListeners();
   }
   // endregion UTILITIES
 

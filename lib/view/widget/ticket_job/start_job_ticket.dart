@@ -46,10 +46,9 @@ class _StartJobTicket extends State<StartJobTicket> {
         padding: EdgeInsets.zero,
     );
 
-    int lenEvidence = viewModel.urlImgValidate != null? viewModel.evidencePhotos.length-1:viewModel.evidencePhotos.length;
+    int lenEvidence = viewModel.evidencePhotos.where((img) => img['source'] != 'SCREENSHOT').length;
 
-    String lenEvidencteText = lenEvidence > 0? "[${lenEvidence}/6]":"[${lenEvidence}/6] mínimo 1.";
-    // String lenEvidencteText = viewModel.evidencePhotos.length > 0? "[${viewModel.evidencePhotos.length}/6]":"[${viewModel.evidencePhotos.length}/6] mínimo 1.";
+    String lenEvidencteText = lenEvidence > 0? "[$lenEvidence/6]":"[$lenEvidence/6] mínimo 1.";
 
     return Screenshot(
       controller: viewModel.screenshotController,
@@ -180,10 +179,12 @@ class _StartJobTicket extends State<StartJobTicket> {
                         viewModel.evidencePhotos = images;
                       });
                     },
-                    onImageDelete: (_) {
+                    onImageDelete: (deletedItem) {
                       setState(() {
-                        viewModel.urlImgValidate = null;
-                        viewModel.isValidateComponent = false;
+                        // Solo limpiamos la validación si por alguna razón se eliminara un SCREENSHOT desde la UI
+                        if (deletedItem['source'] == 'SCREENSHOT') {
+                          viewModel.clearValidation(false);
+                        }
                       });
                     },
                     maxImages: 6,

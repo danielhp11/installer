@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EvidenceGrid extends StatefulWidget {
-  final List<Map<String, String>> images; // [{ 'path': '...', 'source': 'CAMERA|GALLERY' }]
+  final List<Map<String, String>> images; // [{ 'path': '...', 'source': 'CAMERA|GALLERY|SCREENSHOT' }]
   final Function(List<Map<String, String>>) onImagesChanged;
   final Function(Map<String, String>)? onImageDelete;
   final int maxImages;
@@ -76,12 +76,12 @@ class _EvidenceGridState extends State<EvidenceGrid> {
     }
   }
 
-  void _removeImage(int index) {
+  void _removeImage(Map<String, String> itemToRemove) {
     final newImages = List<Map<String, String>>.from(widget.images);
-    final removedItem = newImages.removeAt(index);
+    newImages.removeWhere((img) => img['path'] == itemToRemove['path']);
     widget.onImagesChanged(newImages);
     if (widget.onImageDelete != null) {
-      widget.onImageDelete!(removedItem);
+      widget.onImageDelete!(itemToRemove);
     }
   }
 
@@ -116,6 +116,9 @@ class _EvidenceGridState extends State<EvidenceGrid> {
 
   @override
   Widget build(BuildContext context) {
+    // Filtramos las imágenes que no son SCREENSHOT para mostrarlas en la UI
+    final displayImages = widget.images.where((img) => img['source'] != 'SCREENSHOT').toList();
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -124,12 +127,12 @@ class _EvidenceGridState extends State<EvidenceGrid> {
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
-      itemCount: widget.images.length + (widget.images.length < widget.maxImages && !widget.readOnly ? 1 : 0),
+      itemCount: displayImages.length + (displayImages.length < widget.maxImages && !widget.readOnly ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index == widget.images.length) {
+        if (index == displayImages.length) {
           return _buildAddButton();
         }
-        return _buildImageItem(index);
+        return _buildImageItem(displayImages[index]);
       },
     );
   }
@@ -149,8 +152,7 @@ class _EvidenceGridState extends State<EvidenceGrid> {
     );
   }
 
-  Widget _buildImageItem(int index) {
-    final Map<String, String> imageData = widget.images[index];
+  Widget _buildImageItem(Map<String, String> imageData) {
     final String imagePath = imageData['path'] ?? '';
 
     return Stack(
@@ -164,7 +166,7 @@ class _EvidenceGridState extends State<EvidenceGrid> {
             top: 4,
             right: 4,
             child: GestureDetector(
-              onTap: () => _removeImage(index),
+              onTap: () => _removeImage(imageData),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
