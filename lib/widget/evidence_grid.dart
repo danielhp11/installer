@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 class EvidenceGrid extends StatefulWidget {
   final List<Map<String, String>> images; // [{ 'path': '...', 'source': 'CAMERA|GALLERY' }]
   final Function(List<Map<String, String>>) onImagesChanged;
+  final Function(Map<String, String>)? onImageDelete;
   final int maxImages;
   final bool readOnly;
 
@@ -14,6 +15,7 @@ class EvidenceGrid extends StatefulWidget {
     super.key,
     required this.images,
     required this.onImagesChanged,
+    this.onImageDelete,
     this.maxImages = 6,
     this.readOnly = false,
   });
@@ -76,8 +78,11 @@ class _EvidenceGridState extends State<EvidenceGrid> {
 
   void _removeImage(int index) {
     final newImages = List<Map<String, String>>.from(widget.images);
-    newImages.removeAt(index);
+    final removedItem = newImages.removeAt(index);
     widget.onImagesChanged(newImages);
+    if (widget.onImageDelete != null) {
+      widget.onImageDelete!(removedItem);
+    }
   }
 
   void _showSourceSelector() {
@@ -173,16 +178,14 @@ class _EvidenceGridState extends State<EvidenceGrid> {
 
   Widget _buildImageWidget(String imagePath) {
     final file = File(imagePath);
-    
-    // Eliminamos lengthSync del build para evitar bloqueos de UI y pantalla blanca
     return Image.file(
       file,
-      key: ValueKey(imagePath), // Clave simple para evitar re-renderizados innecesarios
+      key: ValueKey(imagePath),
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
       gaplessPlayback: true,
-      cacheWidth: 250, // Miniatura ligera para ahorrar RAM
+      cacheWidth: 250,
       errorBuilder: (context, error, stackTrace) => Container(
         color: Colors.grey.shade200,
         child: const Icon(Icons.broken_image, color: Colors.grey),

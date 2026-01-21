@@ -45,6 +45,10 @@ class _CloseJobTicket extends State<CloseJobTicket> {
       ),
       padding: EdgeInsets.zero,
     );
+    int lenEvidence = viewModel.urlImgValidate != null? viewModel.evidenceClosePhotos.length-1:viewModel.evidenceClosePhotos.length;
+
+    String lenEvidencteText = lenEvidence > 0? "[${lenEvidence}/6]":"[${lenEvidence}/6] mínimo 1.";
+    // String lenEvidencteText = viewModel.evidenceClosePhotos.length > 0? "[${viewModel.evidenceClosePhotos.length}/6]":"[${viewModel.evidenceClosePhotos.length}/6] mínimo 1.";
 
     return Screenshot(
       controller: viewModel.screenshotCloseController,
@@ -89,7 +93,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                               const SizedBox(),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: viewModel.isDownloadEnabled
+                                  onPressed: viewModel.isDownloadEnabled && viewModel.urlImgValidate == null
                                       ? () async {
                                     await viewModel.takeScreenshotAndSave(true);
                                     if (mounted && viewModel.urlImgValidate != null) {
@@ -162,12 +166,25 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                       )
                     ),
                     const SizedBox(height: 10),
-                    infoText(text: "[${viewModel.evidenceClosePhotos.length}/6]  mínimo 1."),
+                    infoText(
+                        text: lenEvidencteText,
+                        styles: TextStyle(
+                          fontSize: 14,
+                          color: viewModel.evidenceClosePhotos.length > 0? Colors.green.shade600: Colors.red.shade600,
+                          fontWeight: FontWeight.w500,
+                        )
+                    ),
                     EvidenceGrid(
                       images: viewModel.evidenceClosePhotos,
                       onImagesChanged: (images) {
                         setState(() {
                           viewModel.evidenceClosePhotos = images;
+                        });
+                      },
+                      onImageDelete: (_) {
+                        setState(() {
+                          viewModel.urlImgValidate = null;
+                          viewModel.isValidateComponent = false;
                         });
                       },
                       maxImages: 6,

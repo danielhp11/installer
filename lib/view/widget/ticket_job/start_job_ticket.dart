@@ -46,6 +46,11 @@ class _StartJobTicket extends State<StartJobTicket> {
         padding: EdgeInsets.zero,
     );
 
+    int lenEvidence = viewModel.urlImgValidate != null? viewModel.evidencePhotos.length-1:viewModel.evidencePhotos.length;
+
+    String lenEvidencteText = lenEvidence > 0? "[${lenEvidence}/6]":"[${lenEvidence}/6] mínimo 1.";
+    // String lenEvidencteText = viewModel.evidencePhotos.length > 0? "[${viewModel.evidencePhotos.length}/6]":"[${viewModel.evidencePhotos.length}/6] mínimo 1.";
+
     return Screenshot(
       controller: viewModel.screenshotController,
       child: Container(
@@ -86,7 +91,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                               const SizedBox(),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: viewModel.isDownloadEnabled
+                                  onPressed: viewModel.isDownloadEnabled && viewModel.urlImgValidate == null
                                     ? () async {
                                         await viewModel.takeScreenshotAndSave(false);
                                         if (mounted && viewModel.urlImgValidate != null) {
@@ -160,10 +165,10 @@ class _StartJobTicket extends State<StartJobTicket> {
                   ),
                   const SizedBox(height: 10),
                   infoText(
-                      text: viewModel.evidencePhotos.length > 0? "[${viewModel.evidencePhotos.length}/6]":"[${viewModel.evidencePhotos.length}/6] mínimo 1.",
+                      text: lenEvidencteText,
                       styles: TextStyle(
                         fontSize: 14,
-                        color: viewModel.evidencePhotos.length > 0? Colors.green.shade600: Colors.red.shade600,
+                        color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
                         fontWeight: FontWeight.w500,
                       )
                   ),
@@ -173,6 +178,12 @@ class _StartJobTicket extends State<StartJobTicket> {
                     onImagesChanged: (List<Map<String, String>> images) {
                       setState(() {
                         viewModel.evidencePhotos = images;
+                      });
+                    },
+                    onImageDelete: (_) {
+                      setState(() {
+                        viewModel.urlImgValidate = null;
+                        viewModel.isValidateComponent = false;
                       });
                     },
                     maxImages: 6,

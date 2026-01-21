@@ -624,10 +624,10 @@ class ListTicketViewmodel extends ChangeNotifier {
             }
           }
         }
-        print("path SS => ${urlImgValidate}");
-        String? Sspath = await uploadPhoto(urlImgValidate!);
-        print("Uploaded SS => $Sspath");
-        await registerEvidence(idTicket.toString(), Sspath!, "PROCESO", evidencePhotos.length);
+        // print("path SS => ${urlImgValidate}");
+        // String? Sspath = await uploadPhoto(urlImgValidate!);
+        // print("Uploaded SS => $Sspath");
+        // await registerEvidence(idTicket.toString(), Sspath!, "PROCESO", evidencePhotos.length);
         // endregion SUBIR FOTO
 
         // region ENVIAR FORMULARIO
@@ -644,41 +644,12 @@ class ListTicketViewmodel extends ChangeNotifier {
         loadTickets();
         _isLoading = false;
         Navigator.pop(context); // Cerramos el panel al terminar
+        disconnectSocket();
         notifyListeners();
       }catch(e){
         print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
       }
     }
-
-    Future<void> takeScreenshotAndSave( bool isClose ) async {
-      try {
-        final controller = isClose ? screenshotCloseController : screenshotController;
-        final image = await controller.capture();
-        if (image == null) return;
-
-        final directory = await getTemporaryDirectory();
-        final filePath =
-            '${directory.path}/validate_${DateTime.now().millisecondsSinceEpoch}.png';
-
-        final file = File(filePath);
-        await file.writeAsBytes(image);
-
-        // Guardamos la ruta
-        if (isClose) {
-          evidenceClosePhotos.add({"path": filePath});
-        } else {
-          evidencePhotos.add({"path": filePath});
-        }
-
-        urlImgValidate = filePath;
-        isValidateComponent = true;
-
-        notifyListeners();
-      } catch (e) {
-        print("Error capturing screenshot: $e");
-      }
-    }
-
 
   // endregion BTN SHEET START JOB TICKET VIEW
 
@@ -732,10 +703,10 @@ class ListTicketViewmodel extends ChangeNotifier {
         }
       }
 
-      print("path SS => ${urlImgValidate}");
-      String? Sspath = await uploadPhoto(urlImgValidate!);
-      print("Uploaded SS => $Sspath");
-      await registerEvidence(idTicket.toString(), Sspath!, "PENDIENTE_VALIDACION", evidenceClosePhotos.length);
+      // print("path SS close => ${urlImgValidate}");
+      // String? Sspath = await uploadPhoto(urlImgValidate!);
+      // print("Uploaded SS close => $Sspath");
+      // await registerEvidence(idTicket.toString(), Sspath!, "PENDIENTE_VALIDACION", evidenceClosePhotos.length);
       // endregion SUBIR FOTO
 
       // region ENVIAR FORMULARIO
@@ -752,6 +723,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       loadTickets();
       _isLoading = false;
       Navigator.pop(context); // Cerramos el panel al terminar
+      disconnectSocket();
       notifyListeners();
     }catch(e){
       print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
@@ -779,7 +751,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     final pos = positions.first;
     final deviceId = pos['deviceId'] as int;
-    print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+    // print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
     if( deviceId == int.parse(idTicket) ){
 
       _isDownloadEnabled = true;
@@ -901,6 +873,36 @@ class ListTicketViewmodel extends ChangeNotifier {
       }),
     );
     // print(response);
+  }
+
+
+  Future<void> takeScreenshotAndSave( bool isClose ) async {
+    try {
+      final controller = isClose ? screenshotCloseController : screenshotController;
+      final image = await controller.capture();
+      if (image == null) return;
+
+      final directory = await getTemporaryDirectory();
+      final filePath =
+          '${directory.path}/validate_${DateTime.now().millisecondsSinceEpoch}.png';
+
+      final file = File(filePath);
+      await file.writeAsBytes(image);
+
+      // Guardamos la ruta
+      if (isClose) {
+        evidenceClosePhotos.add({"path": filePath});
+      } else {
+        evidencePhotos.add({"path": filePath});
+      }
+
+      urlImgValidate = filePath;
+      isValidateComponent = true;
+
+      notifyListeners();
+    } catch (e) {
+      print("Error capturing screenshot: $e");
+    }
   }
   // endregion UTILITIES
 
