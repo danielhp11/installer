@@ -3,7 +3,7 @@ import 'package:instaladores_new/view/widget/ticket/create_new_ticket_form.dart'
 import 'package:instaladores_new/view/widget/ticket_job/close_job_ticket.dart';
 import 'package:instaladores_new/view/widget/ticket_job/start_job_ticket.dart';
 
-import '../../service/response_service.dart';
+import '../service/response_service.dart';
 
 void showFuelFormBottomSheet(
     BuildContext context,
@@ -11,8 +11,10 @@ void showFuelFormBottomSheet(
     ) {
   showModalBottomSheet(
     context: context,
-    isScrollControlled: true, // 🔥 IMPORTANTE
+    isScrollControlled: true,
     useSafeArea: true,
+    isDismissible: false,
+    enableDrag: false,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -31,6 +33,8 @@ void showStarJobFormBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    isDismissible: false,
+    enableDrag: false,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

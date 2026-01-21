@@ -1,49 +1,107 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:instaladores_new/widget/alert_dialog.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
 
 import '../service/request_service.dart';
 import '../service/response_service.dart';
+import '../service/socket_serv.dart';
 import '../service/user_session_service.dart';
 
 enum TicketSortOption { dateDesc, dateAsc, status, unit }
-enum TicketFilterOption { active, cancelled }
+enum TicketFilterOption { active, cancelled, open, process, pending, closed }
 
 class ListTicketViewmodel extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
-  
+
+  final _socket = SocketServ.instance;
+
+  String? get errorMessage => _errorMessage;
+  bool get isLoading => _isLoading;
+
+  @override
+  void dispose() {
+    _socket.disconnect();
+    super.dispose();
+  }
+
+
   // region TICKET VIEW
   List<ApiResTicket> _tickets = [];
   TicketSortOption _sortOption = TicketSortOption.dateDesc;
-  TicketFilterOption _filterOption = TicketFilterOption.active;
+  Set<TicketFilterOption> _selectedFilters = {TicketFilterOption.active};
   String _searchQuery = '';
 
   List<ApiResTicket> get tickets {
+    // Obtenemos la compañía seleccionada actualmente de la sesión
+    final String currentBranch = UserSession().branchRoot.toUpperCase().trim();
+    final String currentUserName = UserSession().nameUser;
+
     List<ApiResTicket> filtered = _tickets.where((ticket) {
+      // 1. Filtrar por compañía seleccionada (Solo mostrar tickets de la empresa actual)
+      final String ticketCompany = (ticket.company ?? '').toUpperCase().trim();
+      if (ticketCompany != currentBranch) {
+        return false;
+      }
+
+      // 2. Si no es Master, solo mostrar tickets asignados a este técnico
+      if (!UserSession().isMaster && ticket.technicianName != currentUserName) {
+        return false;
+      }
+
       final query = _searchQuery.toLowerCase();
-      
+
       // Búsqueda específica por unitId (Nombre de unidad)
       final matchesUnit = ticket.unitId.toLowerCase().contains(query);
-      
+
       // Búsqueda secundaria opcional por título para flexibilidad
       final matchesTitle = ticket.title.toLowerCase().contains(query);
 
-      final isCancelled = ticket.status.toUpperCase() == "CANCELADO";
-      
-      // Primero evaluamos el filtro de estado
+      final statusUpper = ticket.status.toUpperCase();
+      final isCancelled = statusUpper == "CANCELADO";
+
+      // Filtro de estado (Selección múltiple)
       bool stateMatch = false;
-      if (_filterOption == TicketFilterOption.active) {
-        stateMatch = !isCancelled;
-      } else {
-        stateMatch = isCancelled;
+      for (var filter in _selectedFilters) {
+        bool currentMatch = false;
+        switch (filter) {
+          case TicketFilterOption.active:
+            currentMatch = !isCancelled;
+            break;
+          case TicketFilterOption.cancelled:
+            currentMatch = isCancelled;
+            break;
+          case TicketFilterOption.open:
+            currentMatch = statusUpper == "ABIERTO";
+            break;
+          case TicketFilterOption.process:
+            currentMatch = statusUpper == "PROCESO";
+            break;
+          case TicketFilterOption.pending:
+            currentMatch = statusUpper == "PENDIENTE_VALIDACION";
+            break;
+          case TicketFilterOption.closed:
+            currentMatch = statusUpper == "CERRADO";
+            break;
+        }
+        if (currentMatch) {
+          stateMatch = true;
+          break;
+        }
       }
 
       // Si hay búsqueda, debe coincidir con la unidad (o título) Y con el estado
       if (query.isNotEmpty) {
         return (matchesUnit || matchesTitle) && stateMatch;
       }
-      
+
       return stateMatch;
     }).toList();
 
@@ -74,7 +132,7 @@ class ListTicketViewmodel extends ChangeNotifier {
   }
 
   TicketSortOption get sortOption => _sortOption;
-  TicketFilterOption get filterOption => _filterOption;
+  Set<TicketFilterOption> get selectedFilters => _selectedFilters;
   String get searchQuery => _searchQuery;
 
   void setSortOption(TicketSortOption option) {
@@ -82,8 +140,25 @@ class ListTicketViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFilterOption(TicketFilterOption option) {
-    _filterOption = option;
+  void toggleFilterOption(TicketFilterOption option) {
+    if (_selectedFilters.contains(option)) {
+      if (_selectedFilters.length > 1) {
+        _selectedFilters.remove(option);
+      }
+    } else {
+      // Si seleccionamos 'active', limpiamos los demás estados específicos de activos
+      if (option == TicketFilterOption.active) {
+        _selectedFilters.clear();
+      } else if (option == TicketFilterOption.cancelled) {
+        // Si seleccionamos 'cancelled', limpiamos todo lo demás para evitar confusión
+        _selectedFilters.clear();
+      } else {
+        // Si seleccionamos un estado específico, quitamos 'active' y 'cancelled'
+        _selectedFilters.remove(TicketFilterOption.active);
+        _selectedFilters.remove(TicketFilterOption.cancelled);
+      }
+      _selectedFilters.add(option);
+    }
     notifyListeners();
   }
 
@@ -99,6 +174,9 @@ class ListTicketViewmodel extends ChangeNotifier {
   TextEditingController installerController = TextEditingController();
   TextEditingController unitController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
+
+  List<dynamic> localUnitBusmen = [];
+  List<dynamic> localUnitTemsa = [];
 
   int installerId = 0;
   List<ApiResInstaller> _installers = [];
@@ -124,13 +202,27 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   String? _selectedUnit;
   String? get selectedUnit => _selectedUnit;
+  int? selectedUnitId; // ID de la unidad seleccionada
 
-  void setSelectedUnit(String? unit) {
+  void setSelectedUnit({String? unit, required String company, bool isInit = false }) {
     _selectedUnit = unit;
+    String textText = isInit? "Init load":"Change";
+    print("$textText");
+    List<dynamic> currentList = company == "BUSMEN" ? localUnitBusmen : localUnitTemsa;
+    currentList.forEach((things){
+      bool validate = isInit? things.id == unit : things.name == unit;
+
+      if(validate){
+        print("unit search => ${things.name} | id => ${things.id}");
+        selectedUnitId = things.id;
+      }
+    });
+
     if (unit != null) {
       unitController.text = unit;
     } else {
       unitController.clear();
+      selectedUnitId = null;
     }
     notifyListeners();
   }
@@ -138,20 +230,25 @@ class ListTicketViewmodel extends ChangeNotifier {
   Future<void> loadExternalUnits(String nameCompany) async {
     final serv = RequestServ.instance;
     try {
-      final busmenUnits = await serv.fetchStatusDevice(isTemsa: false);
+      final busmenUnits =  await serv.fetchStatusDevice(isTemsa: false);
       final temsaUnits = await serv.fetchStatusDevice(isTemsa: true);
-      
-      List<String> combinedUnits = [];
-      bool isBusmenUnit = nameCompany == 'BUSMEN'; //UserSession().branchRoot == 'BUSMEN';
+
+      List<String> combinedNames = [];
+      bool isBusmenUnit = nameCompany == 'BUSMEN';
 
       if (busmenUnits != null && isBusmenUnit ) {
-        combinedUnits.addAll((busmenUnits as List).map((u) => (u as UnitBusmen).name));
+        // Ordenamos objetos para que coincidan con la lista de nombres
+        busmenUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
+        localUnitBusmen = busmenUnits;
+        combinedNames.addAll(localUnitBusmen.map((u) => u.name.toString()));
       }
       if (temsaUnits != null && !isBusmenUnit) {
-        combinedUnits.addAll((temsaUnits as List).map((u) => (u as UnitTemsa).name));
+        temsaUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
+        localUnitTemsa = temsaUnits;
+        combinedNames.addAll(localUnitTemsa.map((u) => u.name.toString()));
       }
-      
-      _units = combinedUnits.toSet().toList(); // Unique
+
+      _units = combinedNames.toSet().toList(); // Unique
       _units.sort();
       notifyListeners();
     } catch (e) {
@@ -162,22 +259,62 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   // region BTN SHEET START JOB TICKET VIEW
   final formKeyStartJob = GlobalKey<FormState>();
-  List<String> evidencePhotos = [];
+  TextEditingController descriptionStartController = TextEditingController();
+  TextEditingController lectorasController = TextEditingController(text: "Cargando lectoras...");
+  TextEditingController panicoController = TextEditingController(text: "Cargando botón...");
+  final ScreenshotController screenshotController = ScreenshotController();
+
+
+  List<Map<String, String>> evidencePhotos = [];
+  bool _isDownloadEnabled = false;
+  bool get isDownloadEnabled => _isDownloadEnabled;
+
+  void resetEvidenceStart() {
+    evidencePhotos = [];
+    descriptionStartController.clear();
+    lectorasController.text = "Cargando lectoras...";
+    panicoController.text = "Cargando botón...";
+    _isDownloadEnabled = false;
+    isValidateComponent = false;
+    urlImgValidate = null;
+    notifyListeners();
+  }
   // endregion BTN SHEET START JOB TICKET VIEW
 
-  String? get errorMessage => _errorMessage;
-  bool get isLoading => _isLoading;
+  // region BTN SHEET CLOSE JOB TICKET VIEW
+  final formKeyCloseJob = GlobalKey<FormState>();
+  TextEditingController descriptionCloseController = TextEditingController();
+  final ScreenshotController screenshotCloseController = ScreenshotController();
+  List<Map<String, String>> evidenceClosePhotos = [];
 
+  void resetEvidenceClose() {
+    evidenceClosePhotos = [];
+    descriptionCloseController.clear();
+    lectorasController.text = "Cargando lectoras...";
+    panicoController.text = "Cargando botón...";
+    _isDownloadEnabled = false;
+    isValidateComponent = false;
+    urlImgValidate = null;
+    notifyListeners();
+  }
+  // endregion BTN SHEET CLOSE JOB TICKET VIEW
+
+  // region SOCKET
+  bool isValidateComponent = false;
+  String? urlImgValidate;
+  // endregion SOCKET
+
+  /*================ FUNCTIONS =================*/
 
   // region TICKET VIEW
   Future<void> loadTickets()async{
     _isLoading = true;
     _errorMessage = null;
+    notifyListeners();
 
     final serv = RequestServ.instance;
 
     try{
-      _tickets.clear();
       List<ApiResTicket>? ticketsRecuperados = await serv.handlingRequestParsed<List<ApiResTicket>>(
         urlParam: RequestServ.urlGetTickets,
         asJson: true,
@@ -188,15 +325,33 @@ class ListTicketViewmodel extends ChangeNotifier {
       );
 
       _tickets = ticketsRecuperados ?? [];
+
+      // Actualizar la lista de unidades únicas filtradas por la compañía actual
+      final String currentBranch = UserSession().branchRoot.toUpperCase().trim();
       
-      // Extraer unidades únicas de los tickets existentes inicialmente
-      if (_units.isEmpty) {
-        _units = _tickets.map((t) => t.unitId).toSet().toList();
-        _units.sort();
+      // Lista base de unidades filtrada por empresa
+      _units = _tickets
+          .where((t) => (t.company ?? '').toUpperCase().trim() == currentBranch)
+          .map((t) => t.unitId)
+          .toSet()
+          .toList();
+      
+      // Si no es Master, filtrar unidades solo de SUS tickets asignados
+      if( !UserSession().isMaster ){
+        _units = _tickets
+            .where((t) => 
+                (t.company ?? '').toUpperCase().trim() == currentBranch && 
+                t.technicianName == UserSession().nameUser)
+            .map((t) => t.unitId)
+            .toSet()
+            .toList();
       }
-      
+
+      _units.sort();
+
     }catch(e){
       _errorMessage = e.toString();
+      print("[ ERR ] LOAD TICKETS: $e");
     }finally{
       _isLoading = false;
       notifyListeners();
@@ -211,174 +366,557 @@ class ListTicketViewmodel extends ChangeNotifier {
     descriptionController.clear();
     _selectedInstaller = null;
     _selectedUnit = null;
+    selectedUnitId = null;
     installerId = 0;
   }
 // endregion TICKET VIEW
 
-// region BTN SHEET NEW TICKET VIEW
-  Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
+  // region BTN SHEET NEW TICKET VIEW
+    Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
 
-    if (!formKey.currentState!.validate()) return;
+      if (!formKey.currentState!.validate()) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "Campos incompletos",
+            message: "Es necesario agregar una descripciòn"
+        );
+        return;
+      }
 
-    print("installer => ${installerController.text.toUpperCase()}");
-    if (installerController.text.isEmpty) return;
+      if (installerController.text.isEmpty && installerId == 0 ) {
+        print("installerController => ${installerController.text}");
+        print("installerId => ${installerId}");
+        AnimatedResultDialog.showError(
+            context,
+            title: "Campos incompletos",
+            message: "Es necesario agregar un instalador"
+        );
+        return;
+      }
 
-    print("unit => ${unitController.text.toUpperCase()}");
-    if (unitController.text.isEmpty) return;
+      if (unitController.text.isEmpty) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "Campos incompletos",
+            message: "Es necesario agregar una unidad"
+        );
+        return;
+      }
 
-    _isLoading = true;
-    _errorMessage = null;
+      // _isLoading = true;
+      // _errorMessage = null;
 
-    final serv = RequestServ.instance;
+      final serv = RequestServ.instance;
 
-    try{
-      String url = isUpdate? "${RequestServ.urlGetTickets}/${idTicket}":"${RequestServ.urlGetTickets}/";
-      String method = isUpdate? "PUT":"POST";
+      try{
+        String url = isUpdate? "${RequestServ.urlGetTickets}/${idTicket}":"${RequestServ.urlGetTickets}/";
+        String method = isUpdate? "PUT":"POST";
 
-  //     {
-  //   "technicianId": 5,
-  //   "modifierId": 12,
-  //   "updatedByName": "Nombre del Usuario que edita"
-  // }
-
-      Map<String, dynamic> param = isUpdate?
-        {
+        Map<String, dynamic> param = isUpdate?
+          {
+            "title": "",
+            "description": descriptionController.text,
+            "priority": "",
+            "category": "",
+            "status": "ABIERTO",
+            "technicianName": installerController.text,
+            "unitId": selectedUnitId.toString(),
+            "company": companyController.text.toUpperCase(),
+            "id": idTicket,
+            "createdAt": DateTime.now().toIso8601String(),
+            "technicianId": installerId,
+            "modifierId": UserSession().idUser,
+            "updatedByName": UserSession().nameUser,
+            "evidences": [],
+            "formsData": [],
+            "history": []
+          }:{
           "title": "",
           "description": descriptionController.text,
           "priority": "",
           "category": "",
           "status": "ABIERTO",
-          "technicianName": installerController.text,
-          "unitId": unitController.text,
-          "company": companyController.text.toUpperCase(),
-          "id": idTicket,
-          "createdAt": DateTime.now().toIso8601String(),
           "technicianId": installerId,
-          "modifierId": UserSession().idUser,
-          "updatedByName": UserSession().nameUser,
-          "evidences": [],
-          "formsData": [],
-          "history": []
-        }:{
-        "title": "",
-        "description": descriptionController.text,
-        "priority": "",
-        "category": "",
-        "status": "ABIERTO",
-        "technicianName": installerController.text,
-        "unitId": unitController.text,
-        "company": companyController.text.toUpperCase(),
-      };
+          "technicianName": installerController.text,
+          "unitId": selectedUnitId.toString(),
+          "company": companyController.text.toUpperCase(),
+        };
 
-      print("param => $param");
-      ApiResTicket? ticket = await serv.handlingRequestParsed<ApiResTicket>(
-        urlParam: url,
-        params: param,
-        method: method,
-        asJson: true,
-        fromJson: (json) => ApiResTicket.fromJson(json),
-      );
+        print("param => $param");
+        ApiResTicket? ticket = await serv.handlingRequestParsed<ApiResTicket>(
+          urlParam: url,
+          params: param,
+          method: method,
+          asJson: true,
+          fromJson: (json) => ApiResTicket.fromJson(json),
+        );
 
-      if(ticket == null) return;
+        if(ticket == null) return;
 
-      loadTickets();
+        loadTickets();
 
-      Navigator.pop(context);
-      _isLoading = false;
-      resetForm();
-      notifyListeners();
+        Navigator.pop(context);
+        _isLoading = false;
+        resetForm();
+        notifyListeners();
 
-    }catch(e){
-      print("[ ERROR ] CREATE TICKET => ${e.toString()}");
+      }catch(e){
+        print("[ ERROR ] CREATE TICKET => ${e.toString()}");
+      }
     }
-  }
-// endregion BTN SHEET NEW TICKET VIEW
+  // endregion BTN SHEET NEW TICKET VIEW
 
-// region GET INSTALLER
-  Future<void> getInstaller() async {
-    final serv = RequestServ.instance;
-    try{
-      List<ApiResInstaller>? installers = await serv.handlingRequestParsed<List<ApiResInstaller>>(
-        urlParam: RequestServ.urlInstaller,
-        method: "GET",
-        asJson: true,
-        fromJson: (json) {
-          final list = json as List<dynamic>;
-          return list.map((item) => ApiResInstaller.fromJson(item)).toList();
+  // region GET INSTALLER
+    Future<void> getInstaller() async {
+      final serv = RequestServ.instance;
+      try{
+        List<ApiResInstaller>? installers = await serv.handlingRequestParsed<List<ApiResInstaller>>(
+          urlParam: RequestServ.urlInstaller,
+          method: "GET",
+          asJson: true,
+          fromJson: (json) {
+            final list = json as List<dynamic>;
+            return list.map((item) => ApiResInstaller.fromJson(item)).toList();
+          },
+        );
+
+        _installers = installers ?? [];
+
+        // Auto-seleccionar si el nombre en el controller ya existe en la lista
+        if (installerController.text.isNotEmpty && _installers.isNotEmpty) {
+          try {
+            _selectedInstaller = _installers.firstWhere(
+              (element) => element.full_name.toLowerCase() == installerController.text.toLowerCase()
+            );
+            print("_selectedInstaller => $_selectedInstaller");
+          } catch (_) {
+            // No se encontró coincidencia exacta
+          }
+        }
+
+        notifyListeners();
+
+      }catch(e){
+        print("[ ERR ] GET INSTALLER: ${e.toString()}");
+      }
+    }
+  // endregion GET INSTALLER
+
+  // region BTN DELETE TICKET VIEW
+    Future<void> deleteTicket({required BuildContext context, int? idTicket, String? reason}) async{
+
+      _isLoading = true;
+      _errorMessage = null;
+
+      Navigator.of(context).pop();
+
+
+      try{
+
+        bool isSuccessful = await deleteTicketTest(
+          ticketId : idTicket!,
+          modifierId: UserSession().idUser.toString(),
+          updatedByName : UserSession().nameUser,
+          reason: reason,
+        );
+
+        if(isSuccessful){
+          loadTickets();
+          _isLoading = false;
+          notifyListeners();
+        }
+
+
+      }catch(e){
+        print("[ ERROR ] DELETE TICKET ${e.toString()}");
+      }
+    }
+
+    Future<bool> deleteTicketTest({
+      required int ticketId,
+      required String modifierId,
+      required String updatedByName,
+      String? reason,
+    }) async {
+
+      String url_new = "${RequestServ.baseUrlNor}${RequestServ.urlGetTickets}/$ticketId";
+
+      final Uri url = Uri.parse(url_new).replace(
+        queryParameters: {
+          'modifier_id': modifierId.toString(),
+          'updatedByName': updatedByName,
+          if (reason != null && reason.isNotEmpty) 'cancellation_reason': reason,
         },
       );
 
-      _installers = installers ?? [];
-      
-      // Auto-seleccionar si el nombre en el controller ya existe en la lista
-      if (installerController.text.isNotEmpty && _installers.isNotEmpty) {
-        try {
-          _selectedInstaller = _installers.firstWhere(
-            (element) => element.full_name.toLowerCase() == installerController.text.toLowerCase()
-          );
-        } catch (_) {
-          // No se encontró coincidencia exacta
+      try {
+        final response = await http.delete(
+          url,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 204) {
+          // Eliminado correctamente
+          return true;
+        } else {
+          print('Error al eliminar ticket');
+          print('Status: ${response.statusCode}');
+          print('Body: ${response.body}');
+          return false;
+        }
+      } catch (e) {
+        print('Exception deleteTicket: $e');
+        return false;
+      }
+    }
+  // endregion BTN DELETE TICKET VIEW
+
+  // region BTN SHEET START JOB TICKET VIEW
+    Future<void> sendEvidence({required BuildContext context, int? idTicket, ApiResTicket? ticket}) async{
+
+      if (!formKeyStartJob.currentState!.validate()) return;
+
+      if( evidencePhotos.isEmpty ) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay evidencias",
+            message: "Por lo menos una foto es requerida"
+        );
+        return;
+      }
+
+      if( urlImgValidate == null ) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay validacion",
+            message: "Por favor valida que los coponentes funcionen correctamente"
+        );
+        return;
+      }
+
+
+      try{
+
+        // region CAMBIAR ESTATUS
+        print("=====>1. CHANGE STATUS <====");
+        await updateStatus(
+            idTicket.toString(),
+            "PROCESO",
+            UserSession().nameUser
+        );
+        // endregion CAMBIAR ESTATUS
+
+        // region SUBIR FOTO
+        print("=====>2. ITERATION TO SAVE PHOTO <====");
+        // Usamos un loop for para esperar secuencialmente la subida de cada foto
+        for (int i = 0; i < evidencePhotos.length; i++) {
+          final photoData = evidencePhotos[i];
+          String? path = photoData['path'];
+          if (path != null) {
+            print("path => $path");
+            String? imageUrl = await uploadPhoto(path);
+            if (imageUrl != null) {
+              print("Uploaded: $imageUrl");
+              await registerEvidence(idTicket.toString(), imageUrl, "PROCESO", i + 1);
+            }
+          }
+        }
+        // print("path SS => ${urlImgValidate}");
+        // String? Sspath = await uploadPhoto(urlImgValidate!);
+        // print("Uploaded SS => $Sspath");
+        // await registerEvidence(idTicket.toString(), Sspath!, "PROCESO", evidencePhotos.length);
+        // endregion SUBIR FOTO
+
+        // region ENVIAR FORMULARIO
+        print("=====>4. SEND FORM  <====");
+        Map<String, dynamic> data = {
+          "technician": ticket?.technicianName,
+          "unit": ticket?.unitId,
+          "observations": descriptionStartController.text,
+          "timestamp": DateTime.now().toIso8601String()
+        };
+        await sendFormData(idTicket.toString(), "PROCESO", data);
+        // endregion ENVIAR FORMULARIO
+
+        loadTickets();
+        _isLoading = false;
+        Navigator.pop(context); // Cerramos el panel al terminar
+        disconnectSocket();
+        notifyListeners();
+      }catch(e){
+        print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
+      }
+    }
+
+  // endregion BTN SHEET START JOB TICKET VIEW
+
+  // region BTN SHEET CLOSE JOB TICKET VIEW
+  Future<void> sendEvidenceClose({required BuildContext context, int? idTicket, ApiResTicket? ticket}) async{
+
+    if (!formKeyCloseJob.currentState!.validate()) return;
+
+    if( evidenceClosePhotos.isEmpty ) {
+      AnimatedResultDialog.showError(
+          context,
+          title: "No hay evidencias",
+          message: "Por lo menos una foto es requerida"
+      );
+      return;
+    }
+
+    if( urlImgValidate == null ) {
+      AnimatedResultDialog.showError(
+          context,
+          title: "No hay validacion",
+          message: "Por favor valida que los coponentes funcionen correctamente"
+        );
+        return;
+      }
+
+
+    try{
+
+      // region CAMBIAR ESTATUS
+      print("=====>1. CHANGE STATUS <====");
+      await updateStatus(
+          idTicket.toString(),
+          "PENDIENTE_VALIDACION",
+          UserSession().nameUser
+      );
+      // endregion CAMBIAR ESTATUS
+
+      // region SUBIR FOTO
+      print("=====>2. ITERATION TO SAVE PHOTO <====");
+      // Usamos un loop for para esperar secuencialmente la subida de cada foto
+      for (int i = 0; i < evidenceClosePhotos.length; i++) {
+        final photoData = evidenceClosePhotos[i];
+        String? path = photoData['path'];
+        if (path != null) {
+          String? imageUrl = await uploadPhoto(path);
+          if (imageUrl != null) {
+            print("Uploaded: $imageUrl");
+            await registerEvidence(idTicket.toString(), imageUrl, "PENDIENTE_VALIDACION", i + 1);
+          }
         }
       }
 
-      notifyListeners();
+      // print("path SS close => ${urlImgValidate}");
+      // String? Sspath = await uploadPhoto(urlImgValidate!);
+      // print("Uploaded SS close => $Sspath");
+      // await registerEvidence(idTicket.toString(), Sspath!, "PENDIENTE_VALIDACION", evidenceClosePhotos.length);
+      // endregion SUBIR FOTO
 
-    }catch(e){
-      print("[ ERR ] GET INSTALLER: ${e.toString()}");
-    }
-  }
-// endregion GET INSTALLER
-
-// region BTN DELETE TICKET VIEW
-  Future<void> deleteTicket({required BuildContext context, int? idTicket}) async{
-
-    _isLoading = true;
-    _errorMessage = null;
-
-    Navigator.of(context).pop();
-
-    final serv = RequestServ.instance;
-
-    try{
-      String url = "${RequestServ.urlGetTickets}/$idTicket";
-
-      await serv.handlingRequest(
-        urlParam: url,
-        method: "DELETE",
-        asJson: true,
-      );
+      // region ENVIAR FORMULARIO
+      print("=====>4. SEND FORM  <====");
+      Map<String, dynamic> data = {
+        "technician": ticket?.technicianName,
+        "unit": ticket?.unitId,
+        "observations": descriptionCloseController.text,
+        "timestamp": DateTime.now().toIso8601String()
+      };
+      await sendFormData(idTicket.toString(), "PENDIENTE_VALIDACION", data);
+      // endregion ENVIAR FORMULARIO
 
       loadTickets();
       _isLoading = false;
+      Navigator.pop(context); // Cerramos el panel al terminar
+      disconnectSocket();
       notifyListeners();
     }catch(e){
-      print("[ ERROR ] DELETE TICKET ${e.toString()}");
+      print("[ ERROR ] STAT JOB ACTIVITY ${e.toString()}");
     }
   }
-// endregion BTN DELETE TICKET VIEW
+  // endregion BTN SHEET CLOSE JOB TICKET VIEW
 
-// region BTN SHEET START JOB TICKET VIEW
-  Future<void> sendEvidence({required BuildContext context, int? idTicket}) async{
+  // region SOCKET
+  void initSocket(String idTicket, String company) {
+    lectorasController.text = "Buscando unidad...";
+    panicoController.text = "Buscando unidad...";
+    _socket.onUnitUpdate = (data) {
+      _updateUnitPosition(data, idTicket);
+    };
 
+    _socket.connect( company );
+  }
 
-    final serv = RequestServ.instance;
+  Future<void> _updateUnitPosition(Map<String, dynamic> data, String idTicket) async {
 
-    try{
-      String url = "${RequestServ.urlSendStartJobEvidence}";
+    if (!data.containsKey('positions')) return;
 
-      await serv.handlingRequest(
-        urlParam: url,
-        method: "DELETE",
-        asJson: true,
-      );
+    final positions = data['positions'];
+    if (positions is! List || positions.isEmpty) return;
 
-      loadTickets();
-      _isLoading = false;
+    final pos = positions.first;
+    final deviceId = pos['deviceId'] as int;
+    // print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+    if( deviceId == int.parse(idTicket) ){
+
+      _isDownloadEnabled = true;
       notifyListeners();
-    }catch(e){
-      print("[ ERROR ] DELETE TICKET ${e.toString()}");
+      print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+      // region panic btn
+      bool btnPanicEventOne = pos["attributes"]["di2"] != "null" && pos["attributes"]["di2"] == "true" ;
+      bool btnPanicEventTwo = pos["attributes"]["in2"] != "null" && pos["attributes"]["in2"] == "true" ;
+      print("${pos["attributes"]["di2"]} $btnPanicEventOne");
+      print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
+      print("${btnPanicEventOne || btnPanicEventTwo}");
+
+      panicoController.text = btnPanicEventOne || btnPanicEventTwo? "Verificación correcta" :"Esperando evento...";
+      // endregion panic btn
+
+      // region reds
+      print("reds => ${pos["attributes"]["commandResult"]}");
+      // print(pos["attributes"]["commandResult"] != "");
+      bool isRead = pos["attributes"]["commandResult"] != "null" && pos["attributes"]["commandResult"] == "true";
+      print("isRead => $isRead");
+      lectorasController.text = isRead? "Verificación correcta" :"Esperando evento...";
+      // region reds
+    }
+
+  }
+
+  void disconnectSocket() {
+    _socket.disconnect();
+    // Limpiamos los textos al desconectar para que no queden valores viejos
+    lectorasController.text = "Cargando lectoras...";
+    panicoController.text = "Cargando botón...";
+    _isDownloadEnabled = false;
+    notifyListeners();
+  }
+  // endregion SOCKET
+
+  // region UTILITIES
+  // 1.
+  Future<void> updateStatus(String ticketId, String status, String changedBy) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/status");
+    final response = await http.put(
+      Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/status'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'status': status,
+        'changedBy': changedBy,
+      }),
+    );
+    // print("=> param ${
+    //     {
+    //       'status': status,
+    //       'changedBy': changedBy,
+    //     }
+    // }");
+    print(response.headers);
+  }
+
+  // 2.
+  Future<String?> uploadPhoto(String filePath) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/upload");
+    // print("file => ${filePath}");
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('${RequestServ.baseUrlNor}tickets/upload'));
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data['imageUrl']?.toString();
+      } else {
+        // print("Upload failed: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      // print("Error uploading: $e");
+      return null;
     }
   }
-// endregion BTN SHEET START JOB TICKET VIEW
+
+  // 3.
+  Future<void> registerEvidence(String ticketId, String imageUrl, String phase, int sequence) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/evidence");
+    // print("${
+    //     {
+    //       'imageUrl': imageUrl,
+    //       'phase': phase,
+    //       'sequence': sequence,
+    //     }
+    // }");
+    final response = await http.post(
+      Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/evidence'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'imageUrl': imageUrl,
+        'phase': phase,
+        'sequence': sequence,
+      }),
+    );
+    // print(response);
+  }
+
+  // 4.
+  Future<void> sendFormData(String ticketId, String formType, Map<String, dynamic> data) async {
+    // print("url => ${RequestServ.baseUrlNor}tickets/$ticketId/form-data");
+    // print("${
+    //     {
+    //       'formType': formType,
+    //       'data': data,
+    //     }
+    // }");
+    final response = await http.post(
+      Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/form-data'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'formType': formType,
+        'data': data,
+      }),
+    );
+    // print(response);
+  }
+
+
+  Future<void> takeScreenshotAndSave( bool isClose ) async {
+    try {
+      final controller = isClose ? screenshotCloseController : screenshotController;
+      final image = await controller.capture();
+      if (image == null) return;
+
+      final directory = await getTemporaryDirectory();
+      final filePath =
+          '${directory.path}/validate_${DateTime.now().millisecondsSinceEpoch}.png';
+
+      final file = File(filePath);
+      await file.writeAsBytes(image);
+
+      // Guardamos la ruta con el origen SCREENSHOT
+      if (isClose) {
+        evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+        evidenceClosePhotos.add({"path": filePath, "source": "SCREENSHOT"});
+      } else {
+        evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+        evidencePhotos.add({"path": filePath, "source": "SCREENSHOT"});
+      }
+
+      urlImgValidate = filePath;
+      isValidateComponent = true;
+
+      notifyListeners();
+    } catch (e) {
+      print("Error capturing screenshot: $e");
+    }
+  }
+
+  void clearValidation(bool isClose) {
+    if (isClose) {
+      evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+    } else {
+      evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+    }
+    urlImgValidate = null;
+    isValidateComponent = false;
+    notifyListeners();
+  }
+  // endregion UTILITIES
 
 }

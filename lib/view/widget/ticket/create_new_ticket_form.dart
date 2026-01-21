@@ -1,12 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../../../service/request_service.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
-import '../selector_field.dart';
+import '../../../widget/selector_field.dart';
+import '../../../widget/text_field_widget.dart';
 
 class CreateNewTicketForm extends StatefulWidget {
 
@@ -42,16 +41,18 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
       if (mounted) {
         vm.companyController.text = widget.ticket!.company ?? '';
         vm.installerController.text = widget.ticket!.technicianName;
+        print("installerController =>${vm.installerController.text}");
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
-        
+        vm.selectedUnitId = widget.ticket!.unitId.toString() != "null"?  int.parse(widget.ticket!.unitId):0;
         // Intentar auto-seleccionar la unidad si ya existe en la lista
         if (vm.units.contains(widget.ticket!.unitId)) {
-          vm.setSelectedUnit(widget.ticket!.unitId);
+          vm.setSelectedUnit(unit : widget.ticket!.unitId, company: widget.ticket!.company!, isInit: true);
         }
         setState(() {
           isUpdate = true;
         });
+        // print("Update ticket # ${widget.ticket?.id} => ${isUpdate}");
       }
     } else {
       // Nuevo: Limpiar campos anteriores
@@ -59,11 +60,18 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         vm.resetForm();
         // Valor por defecto basado en la rama seleccionada
         vm.companyController.text = UserSession().branchRoot;
+        if(!UserSession().isMaster){
+          vm.installerId = UserSession().idUser;
+          vm.installerController.text = UserSession().nameUser;
+
+        }
+        print("installerController =>${vm.installerController.text} | ");
         setState(() {
           isUpdate = false;
         });
       }
     }
+
   }
 
   @override
@@ -93,7 +101,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                     const SizedBox(height: 16),
                     UserSession().isMaster ?
                     _installerField(viewModel):
-                    _textFieldOnlyRead(
+                    textFieldOnlyRead(
                         label: 'Instalador',
                         icon: Icons.person_search_outlined,
                         value: UserSession().nameUser,
@@ -102,7 +110,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                     const SizedBox(height: 16),
                     _unitField(viewModel),
                     const SizedBox(height: 16),
-                    _textField(viewModel.descriptionController, 'Descripcion', Icons.text_snippet_outlined),
+                    textField(viewModel.descriptionController, 'Descripcion', Icons.text_snippet_outlined),
                   ],
                 ),
               ),
@@ -145,8 +153,8 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Crear ticket',
+         Text(
+           isUpdate ? 'Actualizar ticket' : 'Crear ticket',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         IconButton(
@@ -200,22 +208,6 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-  Widget _textField(
-      TextEditingController c, String label, IconData icon) {
-    return TextFormField(
-      controller: c,
-      keyboardType: TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (v) {
-        if (v == null || v.isEmpty) return 'Campo requerido';
-        return null;
-      },
-    );
-  }
 
   // ================= LOGIC =================
 
@@ -334,7 +326,9 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                       leading: const Icon(Icons.directions_car),
                       title: Text(unit),
                       onTap: () {
-                        vm.setSelectedUnit(unit);
+                        print(unit);
+                        print(index);
+                        vm.setSelectedUnit(unit: unit, company: vm.companyController.text, isInit: false);
                         Navigator.pop(context);
                       },
                     );
@@ -348,29 +342,5 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-  Widget _textFieldOnlyRead({
-    required String label,
-    required IconData icon,
-    required String value,
-    bool readOnly = false,
-    VoidCallback? onTap,
-  }) {
-    return TextFormField(
-      controller: TextEditingController(text: value),
-      readOnly: readOnly,
-      onTap: onTap, // para manejar clicks si quieres
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: (v) {
-        if (!readOnly && (v == null || v.isEmpty)) {
-          return 'Campo requerido';
-        }
-        return null;
-      },
-    );
-  }
 
 }

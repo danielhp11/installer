@@ -87,12 +87,12 @@ class RequestServ {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return response.body;
       } else {
-        print("HTTP error: ${response.statusCode}");
-        print("response => ${response.headers}");
+        // print("HTTP error: ${response.statusCode}");
+        // print("response => ${response.headers}");
         return null;
       }
     } catch (e) {
-      print("Error en handlingRequest: $e");
+      // print("Error en handlingRequest: $e");
       return null;
     }
   }
@@ -113,7 +113,7 @@ class RequestServ {
       final jsonMap = jsonDecode(responseString);
       return fromJson(jsonMap);
     } catch (e) {
-      print("Error parseando JSON: $e");
+      // print("Error parseando JSON: $e");
       return null;
     }
   }
@@ -132,7 +132,7 @@ class RequestServ {
       );
 
       if (response.statusCode != 200) {
-        print("HTTP error: ${response.statusCode}");
+        // print("HTTP error: ${response.statusCode}");
         return null;
       }
 
@@ -145,12 +145,50 @@ class RequestServ {
       }
 
     } catch (e) {
-      print("Error fetchStatusForUnit: $e");
+      // print("Error fetchStatusForUnit: $e");
       return null;
     }
   }
 
 
 // endregion Units
+
+  // region Installer COOKIE
+  Future<String?> sessionGeovoySistem(bool isBusmen) async {
+    try {
+      var client = http.Client();
+      // https://rastreotemsa.geovoy.com
+      String url = isBusmen? "https://rastreobusmen.geovoy.com/api/session":"https://rastreotemsa.geovoy.com/api/session" ;
+      print("url cookir => $isBusmen");
+      var response = await client.post(
+        Uri.parse(url),
+        body: {
+          "email": "usuariosapp",
+          "password": "usuarios0904",
+        },
+      );
+
+      if (response.statusCode != 200) {
+        print("Error: ${response.statusCode}");
+        return null;
+      }
+
+      String? rawCookie = response.headers['set-cookie'];
+
+      if (rawCookie != null) {
+        String? parsedCookie = rawCookie.split(";").first;
+        // UserSession.token = parsedCookie;
+
+        return parsedCookie;
+      }
+
+      return null;
+
+    } catch (e) {
+      print("Error sessionGeovoySistem: $e");
+      return null;
+    }
+  }
+  // region Installer COOKIE
 
 }

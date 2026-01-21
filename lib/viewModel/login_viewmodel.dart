@@ -43,7 +43,7 @@ class LoginViewModel extends ChangeNotifier {
           method: "POST",
           asJson: false,
           fromJson: (json) {
-            print("json => ${json}");
+            // print("json => ${json}");
             return ApiResAuthentication.fromJson(json); },
       );
 
@@ -55,7 +55,7 @@ class LoginViewModel extends ChangeNotifier {
       UserSession().nameUser = auth.name;
       UserSession().idUser = auth.id;
 
-      print(auth);
+      // print(auth);
     }catch(e){
       print(e);
     }finally{

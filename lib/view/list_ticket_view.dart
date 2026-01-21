@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
 import 'package:instaladores_new/view/login_view.dart';
-import 'package:instaladores_new/view/widget/bottom_sheet_utils.dart';
-import 'package:instaladores_new/view/widget/inbox_item_card.dart';
+import 'package:instaladores_new/widget/bottom_sheet_utils.dart';
+import 'package:instaladores_new/widget/inbox_item_card.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -71,17 +71,20 @@ class _ListTicketViewState extends State<ListTicketView> {
           Expanded(child: _buildBody(viewModel)),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showFuelFormBottomSheet(context, null),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: Padding(
+          padding: const EdgeInsetsGeometry.only(right: 16, bottom: 35),
+        child: FloatingActionButton(
+          onPressed: () => showFuelFormBottomSheet(context, null),
+          child: const Icon(Icons.add),
+        ),
+      )
     );
   }
 
   void _showBranchSelectionDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Forzamos a que seleccione una opción si es la primera vez
+      barrierDismissible: false,
       builder: (BuildContext context) {
         final currentBranch = UserSession().branchRoot;
         
@@ -175,7 +178,7 @@ class _ListTicketViewState extends State<ListTicketView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SearchBar(
-            hintText: 'Buscar por título, unidad o estatus...',
+            hintText: 'Buscar por unidad...',
             leading: const Icon(Icons.search),
             onChanged: (value) => vm.setSearchQuery(value),
             elevation: WidgetStateProperty.all(0),
@@ -185,67 +188,73 @@ class _ListTicketViewState extends State<ListTicketView> {
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<TicketFilterOption>(
-              segments: const [
-                ButtonSegment(
-                  value: TicketFilterOption.active,
-                  label: Text('Activos'),
-                  icon: Icon(Icons.check_circle_outline),
-                ),
-                ButtonSegment(
-                  value: TicketFilterOption.cancelled,
-                  label: Text('Cancelados'),
-                  icon: Icon(Icons.cancel_outlined),
-                ),
-              ],
-              selected: {vm.filterOption},
-              onSelectionChanged: (Set<TicketFilterOption> newSelection) {
-                vm.setFilterOption(newSelection.first);
-              },
-              showSelectedIcon: false,
-              style: SegmentedButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                const Text('Ordenar: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                const SizedBox(width: 8),
                 _SortChip(
-                  label: 'Recientes',
-                  icon: Icons.arrow_downward,
-                  isSelected: vm.sortOption == TicketSortOption.dateDesc,
-                  onSelected: () => vm.setSortOption(TicketSortOption.dateDesc),
+                  label: 'Todos Activos',
+                  icon: Icons.check_circle_outline,
+                  isSelected: vm.selectedFilters.contains(TicketFilterOption.active),
+                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.active),
                 ),
                 const SizedBox(width: 8),
                 _SortChip(
-                  label: 'Antiguos',
-                  icon: Icons.arrow_upward,
-                  isSelected: vm.sortOption == TicketSortOption.dateAsc,
-                  onSelected: () => vm.setSortOption(TicketSortOption.dateAsc),
+                  label: 'Abierto',
+                  icon: Icons.lock_open,
+                  isSelected: vm.selectedFilters.contains(TicketFilterOption.open),
+                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.open),
                 ),
                 const SizedBox(width: 8),
                 _SortChip(
-                  label: 'Estatus',
-                  icon: Icons.info_outline,
-                  isSelected: vm.sortOption == TicketSortOption.status,
-                  onSelected: () => vm.setSortOption(TicketSortOption.status),
+                  label: 'Proceso',
+                  icon: Icons.pending_actions,
+                  isSelected: vm.selectedFilters.contains(TicketFilterOption.process),
+                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.process),
                 ),
                 const SizedBox(width: 8),
                 _SortChip(
-                  label: 'Unidad',
-                  icon: Icons.directions_car,
-                  isSelected: vm.sortOption == TicketSortOption.unit,
-                  onSelected: () => vm.setSortOption(TicketSortOption.unit),
+                  label: 'P. Validación',
+                  icon: Icons.rule,
+                  isSelected: vm.selectedFilters.contains(TicketFilterOption.pending),
+                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.pending),
+                ),
+                const SizedBox(width: 8),
+                _SortChip(
+                  label: 'Cerrado',
+                  icon: Icons.lock,
+                  isSelected: vm.selectedFilters.contains(TicketFilterOption.closed),
+                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.closed),
+                ),
+                const SizedBox(width: 8),
+                _SortChip(
+                  label: 'Cancelados',
+                  icon: Icons.cancel_outlined,
+                  isSelected: vm.selectedFilters.contains(TicketFilterOption.cancelled),
+                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.cancelled),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text('Ordenar por fecha: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              const SizedBox(width: 8),
+              _SortChip(
+                label: 'Recientes',
+                icon: Icons.arrow_downward,
+                isSelected: vm.sortOption == TicketSortOption.dateDesc,
+                onSelected: () => vm.setSortOption(TicketSortOption.dateDesc),
+              ),
+              const SizedBox(width: 8),
+              _SortChip(
+                label: 'Antiguos',
+                icon: Icons.arrow_upward,
+                isSelected: vm.sortOption == TicketSortOption.dateAsc,
+                onSelected: () => vm.setSortOption(TicketSortOption.dateAsc),
+              ),
+            ],
           ),
         ],
       ),
