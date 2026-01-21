@@ -5,7 +5,9 @@ import 'package:screenshot/screenshot.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
+import '../../../widget/card_widget.dart';
 import '../../../widget/evidence_grid.dart';
+import '../../../widget/header_widget.dart';
 import '../../../widget/text_field_widget.dart';
 
 class StartJobTicket extends StatefulWidget {
@@ -68,7 +70,10 @@ class _StartJobTicket extends State<StartJobTicket> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _header( viewModel ),
+                  header( context,"Iniciar ticket", (){
+                    viewModel.disconnectSocket();
+                    Navigator.pop(context);
+                  } ),
                   const SizedBox(height: 16),
                   textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company.toString(), readOnly: true ),
                   const SizedBox(height: 16),
@@ -78,7 +83,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                   const SizedBox(height: 10),
                   textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
                   const SizedBox(height: 10),
-                  _card(
+                  card(
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -210,39 +215,6 @@ class _StartJobTicket extends State<StartJobTicket> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _header( ListTicketViewmodel vm ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Iniciar ticket',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => {
-            vm.disconnectSocket(),
-            Navigator.pop(context)
-          },
-        )
-      ],
-    );
-  }
-
-  Widget _card({required Widget child}) {
-    return Card(
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
       ),
     );
   }

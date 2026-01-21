@@ -159,7 +159,7 @@ class RequestServ {
       var client = http.Client();
       // https://rastreotemsa.geovoy.com
       String url = isBusmen? "https://rastreobusmen.geovoy.com/api/session":"https://rastreotemsa.geovoy.com/api/session" ;
-      print("url cookir => $isBusmen");
+
       var response = await client.post(
         Uri.parse(url),
         body: {

@@ -34,9 +34,9 @@ class SocketServ {
     // final uri = Uri.parse("wss://rastreobusmen.geovoy.com/api/socket");
 
     try {
-      print("Intentando conectar WebSocket...");
-      print("$uri");
-      print("_cookie $_cookie");
+      // print("Intentando conectar WebSocket...");
+      // print("$uri");
+      // print("_cookie $_cookie");
 
       _ws = await WebSocket.connect(
         uri.toString(),
@@ -45,7 +45,7 @@ class SocketServ {
         },
       );
 
-      print("WEBSOCKET => CONECTADO");
+      // print("WEBSOCKET => CONECTADO");
 
       _ws!.listen(
             (message) {
@@ -77,7 +77,7 @@ class SocketServ {
         },
 
         onDone: () {
-          print("WS DESCONECTADO");
+          // print("WS DESCONECTADO");
           _ws = null;
           if (!_intentionalDisconnect) {
             reconnect(company);

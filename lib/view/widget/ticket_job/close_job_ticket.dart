@@ -6,6 +6,7 @@ import 'package:screenshot/screenshot.dart';
 
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
+import '../../../widget/card_widget.dart';
 import '../../../widget/evidence_grid.dart';
 import '../../../widget/header_widget.dart';
 import '../../../widget/text_field_widget.dart';
@@ -81,7 +82,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                     const SizedBox(height: 16),
                     textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
                     const SizedBox(height: 16),
-                    _card(
+                    card(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -213,21 +214,5 @@ class _CloseJobTicket extends State<CloseJobTicket> {
       ),
     );
   }
-
-
-  Widget _card({required Widget child}) {
-    return Card(
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
-      ),
-    );
-  }
-
 
 }

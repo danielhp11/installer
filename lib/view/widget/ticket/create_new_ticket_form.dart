@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
+import '../../../widget/card_widget.dart';
+import '../../../widget/header_widget.dart';
 import '../../../widget/selector_field.dart';
 import '../../../widget/text_field_widget.dart';
 
@@ -41,7 +43,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
       if (mounted) {
         vm.companyController.text = widget.ticket!.company ?? '';
         vm.installerController.text = widget.ticket!.technicianName;
-        print("installerController =>${vm.installerController.text}");
+
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
         vm.selectedUnitId = widget.ticket!.unitId.toString() != "null"?  int.parse(widget.ticket!.unitId):0;
@@ -52,7 +54,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         setState(() {
           isUpdate = true;
         });
-        // print("Update ticket # ${widget.ticket?.id} => ${isUpdate}");
+
       }
     } else {
       // Nuevo: Limpiar campos anteriores
@@ -65,7 +67,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
           vm.installerController.text = UserSession().nameUser;
 
         }
-        print("installerController =>${vm.installerController.text} | ");
+
         setState(() {
           isUpdate = false;
         });
@@ -77,6 +79,8 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ListTicketViewmodel>();
+
+    String textTitle = isUpdate ? 'Actualizar ticket' : 'Crear ticket';
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -92,9 +96,13 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _header(),
+              header(
+                context,
+                textTitle,
+                () => Navigator.pop(context)
+              ),
               const SizedBox(height: 16),
-              _card(
+              card(
                 child: Column(
                   children: [
                     _branchField(viewModel),
@@ -147,37 +155,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-  // ================= UI =================
-
-  Widget _header() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-         Text(
-           isUpdate ? 'Actualizar ticket' : 'Crear ticket',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        )
-      ],
-    );
-  }
-
-  Widget _card({required Widget child}) {
-    return Card(
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
-      ),
-    );
-  }
+  //  INPUTS SELECTED
 
   Widget _branchField(ListTicketViewmodel vm) {
     return SelectorField(

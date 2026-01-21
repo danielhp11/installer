@@ -40,34 +40,33 @@ class ListTicketViewmodel extends ChangeNotifier {
   String _searchQuery = '';
 
   List<ApiResTicket> get tickets {
-    // Obtenemos la compañía seleccionada actualmente de la sesión
+
     final String currentBranch = UserSession().branchRoot.toUpperCase().trim();
     final String currentUserName = UserSession().nameUser;
 
     List<ApiResTicket> filtered = _tickets.where((ticket) {
-      // 1. Filtrar por compañía seleccionada (Solo mostrar tickets de la empresa actual)
+
       final String ticketCompany = (ticket.company ?? '').toUpperCase().trim();
       if (ticketCompany != currentBranch) {
         return false;
       }
 
-      // 2. Si no es Master, solo mostrar tickets asignados a este técnico
+
       if (!UserSession().isMaster && ticket.technicianName != currentUserName) {
         return false;
       }
 
       final query = _searchQuery.toLowerCase();
 
-      // Búsqueda específica por unitId (Nombre de unidad)
+
       final matchesUnit = ticket.unitId.toLowerCase().contains(query);
 
-      // Búsqueda secundaria opcional por título para flexibilidad
+
       final matchesTitle = ticket.title.toLowerCase().contains(query);
 
       final statusUpper = ticket.status.toUpperCase();
       final isCancelled = statusUpper == "CANCELADO";
 
-      // Filtro de estado (Selección múltiple)
       bool stateMatch = false;
       for (var filter in _selectedFilters) {
         bool currentMatch = false;
@@ -97,7 +96,6 @@ class ListTicketViewmodel extends ChangeNotifier {
         }
       }
 
-      // Si hay búsqueda, debe coincidir con la unidad (o título) Y con el estado
       if (query.isNotEmpty) {
         return (matchesUnit || matchesTitle) && stateMatch;
       }
@@ -105,7 +103,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       return stateMatch;
     }).toList();
 
-    // Lógica de ordenamiento corregida
+    // FILTER ORDER ASIC OR DESC
     switch (_sortOption) {
       case TicketSortOption.dateDesc:
         filtered.sort((a, b) {
@@ -146,14 +144,14 @@ class ListTicketViewmodel extends ChangeNotifier {
         _selectedFilters.remove(option);
       }
     } else {
-      // Si seleccionamos 'active', limpiamos los demás estados específicos de activos
+
       if (option == TicketFilterOption.active) {
         _selectedFilters.clear();
       } else if (option == TicketFilterOption.cancelled) {
-        // Si seleccionamos 'cancelled', limpiamos todo lo demás para evitar confusión
+
         _selectedFilters.clear();
       } else {
-        // Si seleccionamos un estado específico, quitamos 'active' y 'cancelled'
+
         _selectedFilters.remove(TicketFilterOption.active);
         _selectedFilters.remove(TicketFilterOption.cancelled);
       }
@@ -202,18 +200,18 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   String? _selectedUnit;
   String? get selectedUnit => _selectedUnit;
-  int? selectedUnitId; // ID de la unidad seleccionada
+  int? selectedUnitId;
 
   void setSelectedUnit({String? unit, required String company, bool isInit = false }) {
     _selectedUnit = unit;
     String textText = isInit? "Init load":"Change";
-    print("$textText");
+
     List<dynamic> currentList = company == "BUSMEN" ? localUnitBusmen : localUnitTemsa;
     currentList.forEach((things){
       bool validate = isInit? things.id == unit : things.name == unit;
 
       if(validate){
-        print("unit search => ${things.name} | id => ${things.id}");
+
         selectedUnitId = things.id;
       }
     });
@@ -384,8 +382,6 @@ class ListTicketViewmodel extends ChangeNotifier {
       }
 
       if (installerController.text.isEmpty && installerId == 0 ) {
-        print("installerController => ${installerController.text}");
-        print("installerId => ${installerId}");
         AnimatedResultDialog.showError(
             context,
             title: "Campos incompletos",
@@ -442,7 +438,6 @@ class ListTicketViewmodel extends ChangeNotifier {
           "company": companyController.text.toUpperCase(),
         };
 
-        print("param => $param");
         ApiResTicket? ticket = await serv.handlingRequestParsed<ApiResTicket>(
           urlParam: url,
           params: param,
@@ -488,7 +483,6 @@ class ListTicketViewmodel extends ChangeNotifier {
             _selectedInstaller = _installers.firstWhere(
               (element) => element.full_name.toLowerCase() == installerController.text.toLowerCase()
             );
-            print("_selectedInstaller => $_selectedInstaller");
           } catch (_) {
             // No se encontró coincidencia exacta
           }
@@ -601,7 +595,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       try{
 
         // region CAMBIAR ESTATUS
-        print("=====>1. CHANGE STATUS <====");
+        // print("=====>1. CHANGE STATUS <====");
         await updateStatus(
             idTicket.toString(),
             "PROCESO",
@@ -610,16 +604,16 @@ class ListTicketViewmodel extends ChangeNotifier {
         // endregion CAMBIAR ESTATUS
 
         // region SUBIR FOTO
-        print("=====>2. ITERATION TO SAVE PHOTO <====");
+        // print("=====>2. ITERATION TO SAVE PHOTO <====");
         // Usamos un loop for para esperar secuencialmente la subida de cada foto
         for (int i = 0; i < evidencePhotos.length; i++) {
           final photoData = evidencePhotos[i];
           String? path = photoData['path'];
           if (path != null) {
-            print("path => $path");
+            // print("path => $path");
             String? imageUrl = await uploadPhoto(path);
             if (imageUrl != null) {
-              print("Uploaded: $imageUrl");
+              // print("Uploaded: $imageUrl");
               await registerEvidence(idTicket.toString(), imageUrl, "PROCESO", i + 1);
             }
           }
@@ -631,7 +625,7 @@ class ListTicketViewmodel extends ChangeNotifier {
         // endregion SUBIR FOTO
 
         // region ENVIAR FORMULARIO
-        print("=====>4. SEND FORM  <====");
+        // print("=====>4. SEND FORM  <====");
         Map<String, dynamic> data = {
           "technician": ticket?.technicianName,
           "unit": ticket?.unitId,
@@ -680,7 +674,7 @@ class ListTicketViewmodel extends ChangeNotifier {
     try{
 
       // region CAMBIAR ESTATUS
-      print("=====>1. CHANGE STATUS <====");
+      // print("=====>1. CHANGE STATUS <====");
       await updateStatus(
           idTicket.toString(),
           "PENDIENTE_VALIDACION",
@@ -689,7 +683,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       // endregion CAMBIAR ESTATUS
 
       // region SUBIR FOTO
-      print("=====>2. ITERATION TO SAVE PHOTO <====");
+      // print("=====>2. ITERATION TO SAVE PHOTO <====");
       // Usamos un loop for para esperar secuencialmente la subida de cada foto
       for (int i = 0; i < evidenceClosePhotos.length; i++) {
         final photoData = evidenceClosePhotos[i];
@@ -697,7 +691,7 @@ class ListTicketViewmodel extends ChangeNotifier {
         if (path != null) {
           String? imageUrl = await uploadPhoto(path);
           if (imageUrl != null) {
-            print("Uploaded: $imageUrl");
+            // print("Uploaded: $imageUrl");
             await registerEvidence(idTicket.toString(), imageUrl, "PENDIENTE_VALIDACION", i + 1);
           }
         }
@@ -710,7 +704,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       // endregion SUBIR FOTO
 
       // region ENVIAR FORMULARIO
-      print("=====>4. SEND FORM  <====");
+      // print("=====>4. SEND FORM  <====");
       Map<String, dynamic> data = {
         "technician": ticket?.technicianName,
         "unit": ticket?.unitId,
@@ -756,22 +750,22 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       _isDownloadEnabled = true;
       notifyListeners();
-      print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+      // print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
       // region panic btn
       bool btnPanicEventOne = pos["attributes"]["di2"] != "null" && pos["attributes"]["di2"] == "true" ;
       bool btnPanicEventTwo = pos["attributes"]["in2"] != "null" && pos["attributes"]["in2"] == "true" ;
-      print("${pos["attributes"]["di2"]} $btnPanicEventOne");
-      print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
-      print("${btnPanicEventOne || btnPanicEventTwo}");
+      // print("${pos["attributes"]["di2"]} $btnPanicEventOne");
+      // print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
+      // print("${btnPanicEventOne || btnPanicEventTwo}");
 
       panicoController.text = btnPanicEventOne || btnPanicEventTwo? "Verificación correcta" :"Esperando evento...";
       // endregion panic btn
 
       // region reds
-      print("reds => ${pos["attributes"]["commandResult"]}");
+      // print("reds => ${pos["attributes"]["commandResult"]}");
       // print(pos["attributes"]["commandResult"] != "");
       bool isRead = pos["attributes"]["commandResult"] != "null" && pos["attributes"]["commandResult"] == "true";
-      print("isRead => $isRead");
+      // print("isRead => $isRead");
       lectorasController.text = isRead? "Verificación correcta" :"Esperando evento...";
       // region reds
     }
