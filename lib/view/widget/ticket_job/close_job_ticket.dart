@@ -25,7 +25,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
   @override
   void initState() {
     super.initState();
-    // Limpiamos las evidencias previas al iniciar la vista
+
     Future.microtask(() {
       context.read<ListTicketViewmodel>().isLoadingClose = true;
       context.read<ListTicketViewmodel>().resetEvidenceClose();
@@ -51,7 +51,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
     int lenEvidence = viewModel.urlImgValidate != null? viewModel.evidenceClosePhotos.length-1:viewModel.evidenceClosePhotos.length;
 
     String lenEvidencteText = lenEvidence > 0? "[${lenEvidence}/6]":"[${lenEvidence}/6] mínimo 1.";
-    // String lenEvidencteText = viewModel.evidenceClosePhotos.length > 0? "[${viewModel.evidenceClosePhotos.length}/6]":"[${viewModel.evidenceClosePhotos.length}/6] mínimo 1.";
+
 
     return Screenshot(
       controller: viewModel.screenshotCloseController,

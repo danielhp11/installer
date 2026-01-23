@@ -23,16 +23,12 @@ class _ListTicketViewState extends State<ListTicketView> {
     super.initState();
     Future.microtask(() {
 
-      // final now = DateTime.now();
       final dateInit = "${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}";
 
-      // Configuramos las fechas iniciales en el ViewModel sin llamar a loadTickets() aún
       final vm = context.read<ListTicketViewmodel>();
-      vm.controllerDateStart.text = "19/01/2026";//dateInit;
+      vm.controllerDateStart.text = dateInit;
       vm.controllerDateEnd.text = dateInit;
 
-      // Abrimos el diálogo de selección de empresa. 
-      // La petición a /tickets se hará dentro de _selectBranch cuando el usuario elija una.
       _showBranchSelectionDialog(context);
     });
   }
@@ -171,7 +167,7 @@ class _ListTicketViewState extends State<ListTicketView> {
   void _selectBranch(BuildContext context, String branch) {
     UserSession().branchRoot = branch;
     Navigator.pop(context);
-    // Recargar tickets para la nueva rama seleccionada
+
     context.read<ListTicketViewmodel>().loadTickets();
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -216,13 +212,13 @@ class _ListTicketViewState extends State<ListTicketView> {
             ),
           ),
           const SizedBox(height: 12),
-          // range date
+
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: vm.controllerDateStart,
-                  readOnly: true, // Prevent keyboard
+                  readOnly: true,
                   onTap: () => _pickDate(vm: vm),
                   decoration: const InputDecoration(
                     labelText: "Fecha inicio",
@@ -234,7 +230,7 @@ class _ListTicketViewState extends State<ListTicketView> {
               Expanded(
                 child: TextField(
                   controller: vm.controllerDateEnd,
-                  readOnly: true, // Prevent keyboard
+                  readOnly: true,
                   onTap: () => _pickDate(isStartDate: false, vm: vm),
                   decoration: const InputDecoration(
                     labelText: "Fecha final",

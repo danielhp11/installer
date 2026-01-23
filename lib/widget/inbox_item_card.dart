@@ -143,7 +143,7 @@ class InboxItemCard extends StatelessWidget {
                   ],
                 ),
 
-                /// 🔹 ACTIONS
+                ///  ACTIONS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -158,8 +158,9 @@ class InboxItemCard extends StatelessWidget {
                     _actionIcon(
                       icon: Icons.task_alt,
                       color: _getBadgeColor(),
-                      visible: !UserSession().isMaster &&
-                          item.status == statusProcess,
+                      visible: true,
+                      // visible: !UserSession().isMaster &&
+                      //     item.status == statusProcess,
                       onTap: () =>
                           showCloseJobFormBottomSheet(context, item),
                     ),

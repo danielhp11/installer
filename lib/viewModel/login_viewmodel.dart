@@ -28,7 +28,6 @@ class LoginViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Simulamos una petición de red
     final serv = RequestServ.instance;
 
     bool isLogin = false;
@@ -43,7 +42,6 @@ class LoginViewModel extends ChangeNotifier {
           method: "POST",
           asJson: false,
           fromJson: (json) {
-            // print("json => ${json}");
             return ApiResAuthentication.fromJson(json); },
       );
 
@@ -55,7 +53,6 @@ class LoginViewModel extends ChangeNotifier {
       UserSession().nameUser = auth.name;
       UserSession().idUser = auth.id;
 
-      // print(auth);
     }catch(e){
       print(e);
     }finally{
@@ -63,10 +60,7 @@ class LoginViewModel extends ChangeNotifier {
       notifyListeners();
     }
 
-    // Lógica simple de validación
-    // if (email == "admin@mail.com" && password == "123456") {
-    //   return true;
-    // }
+
     return isLogin;
   }
 }

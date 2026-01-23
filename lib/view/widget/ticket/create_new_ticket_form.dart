@@ -31,16 +31,14 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
 
   Future<void> _initData() async {
     final vm = context.read<ListTicketViewmodel>();
-    
-    // Cargamos instaladores
+
     vm.isLoadNewUpdate = true;
     vm.getInstaller();
-    
-    // Cargamos y combinamos unidades de Busmen y Temsa
+
     await vm.loadExternalUnits(UserSession().branchRoot);
 
     if (widget.ticket != null) {
-      // Editar: llenar con datos
+
       if (mounted) {
         vm.companyController.text = widget.ticket!.company ?? '';
         vm.installerController.text = widget.ticket!.technicianName;
@@ -48,7 +46,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
         vm.selectedUnitId = widget.ticket!.unitId.toString() != "null"?  int.parse(widget.ticket!.unitId):0;
-        // Intentar auto-seleccionar la unidad si ya existe en la lista
+
         if (vm.units.contains(widget.ticket!.unitId)) {
           vm.setSelectedUnit(unit : widget.ticket!.unitId, company: widget.ticket!.company!, isInit: true);
         }
@@ -58,10 +56,10 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
 
       }
     } else {
-      // Nuevo: Limpiar campos anteriores
+
       if (mounted) {
         vm.resetForm();
-        // Valor por defecto basado en la rama seleccionada
+
         vm.companyController.text = UserSession().branchRoot;
         if(!UserSession().isMaster){
           vm.installerId = UserSession().idUser;
@@ -190,8 +188,6 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-
-  // ================= LOGIC =================
 
   Future<void> _selectBranch(ListTicketViewmodel vm) async {
     showModalBottomSheet(

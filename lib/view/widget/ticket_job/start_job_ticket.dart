@@ -25,7 +25,7 @@ class _StartJobTicket extends State<StartJobTicket> {
   @override
   void initState() {
     super.initState();
-    // Limpiamos las evidencias previas al iniciar la vista
+
     Future.microtask(() {
       context.read<ListTicketViewmodel>().isLoadingStart = true;
       context.read<ListTicketViewmodel>().resetEvidenceStart();
@@ -59,7 +59,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     return Screenshot(
       controller: viewModel.screenshotController,
       child: Container(
-        color: Theme.of(context).scaffoldBackgroundColor, // Importante para que el screenshot no salga negro
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.only(
@@ -190,7 +190,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                     },
                     onImageDelete: (deletedItem) {
                       setState(() {
-                        // Solo limpiamos la validación si por alguna razón se eliminara un SCREENSHOT desde la UI
+
                         if (deletedItem['source'] == 'SCREENSHOT') {
                           viewModel.clearValidation(false);
                         }
