@@ -778,6 +778,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       _isDownloadEnabled = true;
       notifyListeners();
+      print("data socket => $pos");
       print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
       bool btnPanicEventOne = pos["attributes"]["di2"] != "null" && pos["attributes"]["di2"] == "true" ;
       bool btnPanicEventTwo = pos["attributes"]["in2"] != "null" && pos["attributes"]["in2"] == "true" ;
@@ -788,9 +789,9 @@ class ListTicketViewmodel extends ChangeNotifier {
       panicoController.text = btnPanicEventOne || btnPanicEventTwo? "Verificación correcta" :"Esperando evento...";
 
       // region reds
-      print("reds => ${pos["attributes"]["commandResult"]}");
-      print(pos["attributes"]["commandResult"] != "");
-      bool isRead = pos["attributes"]["commandResult"] != "null" && pos["attributes"]["commandResult"] == "true";
+      print("reds => ${pos["attributes"]["event"]}");
+      print(pos["attributes"]["event"] == "207");
+      bool isRead = pos["attributes"]["event"] != "null" && pos["attributes"]["event"] == "207";
       // print("isRead => $isRead");
       lectorasController.text = isRead? "Verificación correcta" :"Esperando evento...";
       // region reds

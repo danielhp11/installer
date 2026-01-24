@@ -238,83 +238,161 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
   }
 
   Future<void> _selectInstaller(ListTicketViewmodel vm) async {
+    List<ApiResInstaller> filteredInstallers = List.from(vm.installers);
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Seleccionar Instalador',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: vm.installers.length,
-                  itemBuilder: (context, index) {
-                    final installer = vm.installers[index];
-                    return ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person)),
-                      title: Text(installer.full_name),
-                      subtitle: Text(installer.email),
-                      onTap: () {
-                        vm.setSelectedInstaller(installer);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Seleccionar Instalador',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar instalador...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                        ),
+                        onChanged: (value) {
+                          setModalState(() {
+                            filteredInstallers = vm.installers
+                                .where((i) => i.full_name.toLowerCase().contains(value.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                      ),
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: filteredInstallers.isEmpty
+                          ? const Center(child: Text('No se encontraron instaladores'))
+                          : ListView.builder(
+                              itemCount: filteredInstallers.length,
+                              itemBuilder: (context, index) {
+                                final installer = filteredInstallers[index];
+                                return ListTile(
+                                  leading: const CircleAvatar(child: Icon(Icons.person)),
+                                  title: Text(installer.full_name),
+                                  subtitle: Text(installer.email),
+                                  onTap: () {
+                                    vm.setSelectedInstaller(installer);
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
   Future<void> _selectUnit(ListTicketViewmodel vm) async {
+    List<String> filteredUnits = List.from(vm.units);
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Seleccionar Unidad',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: vm.units.length,
-                  itemBuilder: (context, index) {
-                    final unit = vm.units[index];
-                    return ListTile(
-                      leading: const Icon(Icons.directions_car),
-                      title: Text(unit),
-                      onTap: () {
-                        print(unit);
-                        print(index);
-                        vm.setSelectedUnit(unit: unit, company: vm.companyController.text, isInit: false);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Seleccionar Unidad',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar unidad...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                        ),
+                        onChanged: (value) {
+                          setModalState(() {
+                            filteredUnits = vm.units
+                                .where((u) => u.toLowerCase().contains(value.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                      ),
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: filteredUnits.isEmpty
+                          ? const Center(child: Text('No se encontraron unidades'))
+                          : ListView.builder(
+                              itemCount: filteredUnits.length,
+                              itemBuilder: (context, index) {
+                                final unit = filteredUnits[index];
+                                return ListTile(
+                                  leading: const Icon(Icons.directions_car),
+                                  title: Text(unit),
+                                  onTap: () {
+                                    vm.setSelectedUnit(
+                                      unit: unit,
+                                      company: vm.companyController.text,
+                                      isInit: false,
+                                    );
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
