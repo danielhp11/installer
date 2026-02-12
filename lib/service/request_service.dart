@@ -3,11 +3,11 @@ import 'package:http/http.dart' as http;
 import 'response_service.dart';
 
 class RequestServ {
-  // static const String baseUrlAdm = "";
-  static const String baseUrlNor = "http://172.16.2.147:8000/";
+
+  static const String baseUrlNor = "https://instaladores.geovoy.com/api/";
 
   static const String urlAuthentication = "auth/login";
-  static const String urlGetTickets = "tickets";
+  static const String urlGetTickets = "tickets/";
   static const String urlInstaller = "users/?all=false";
   static const String urlSendStartJobEvidence = "tickets/upload";
 
@@ -17,7 +17,6 @@ class RequestServ {
   final String basicAuth =
       'Basic ${base64Encode(utf8.encode('$_apiUser:$_apiPass'))}';
 
-  // Singleton pattern
   RequestServ._privateConstructor();
   static final RequestServ instance = RequestServ._privateConstructor();
 
@@ -159,12 +158,14 @@ class RequestServ {
       var client = http.Client();
       // https://rastreotemsa.geovoy.com
       String url = isBusmen? "https://rastreobusmen.geovoy.com/api/session":"https://rastreotemsa.geovoy.com/api/session" ;
-      print("url cookir => $isBusmen");
+
       var response = await client.post(
         Uri.parse(url),
         body: {
-          "email": "usuariosapp",
-          "password": "usuarios0904",
+          // "email": "usuariosapp",
+          // "password": "usuarios0904",
+          "email": "desarrollo@geovoy.com",
+          "password": "DesGeo122",
         },
       );
 

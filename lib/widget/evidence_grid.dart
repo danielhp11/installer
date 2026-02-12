@@ -42,6 +42,7 @@ class _EvidenceGridState extends State<EvidenceGrid> {
       _processImage(response.file!, 'CAMERA');
     } catch (e) {
       debugPrint("Error recuperando datos: $e");
+      print("[ ERR ] Camara on Grid => $e");
     }
   }
 

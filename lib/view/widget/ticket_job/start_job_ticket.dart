@@ -5,7 +5,9 @@ import 'package:screenshot/screenshot.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
+import '../../../widget/card_widget.dart';
 import '../../../widget/evidence_grid.dart';
+import '../../../widget/header_widget.dart';
 import '../../../widget/text_field_widget.dart';
 
 class StartJobTicket extends StatefulWidget {
@@ -23,10 +25,12 @@ class _StartJobTicket extends State<StartJobTicket> {
   @override
   void initState() {
     super.initState();
-    // Limpiamos las evidencias previas al iniciar la vista
+
     Future.microtask(() {
+      context.read<ListTicketViewmodel>().isLoadingStart = true;
       context.read<ListTicketViewmodel>().resetEvidenceStart();
       context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId, widget.ticket.company!);
+      context.read<ListTicketViewmodel>().isLoadingStart = false;
     });
   }
 
@@ -35,6 +39,8 @@ class _StartJobTicket extends State<StartJobTicket> {
   Widget build(BuildContext context) {
 
     final viewModel = context.watch<ListTicketViewmodel>();
+
+    if (viewModel.isLoadingStart) return const Center(child: CircularProgressIndicator());
 
     final ButtonStyle styleValidateBtn = ElevatedButton.styleFrom(
         textStyle: const TextStyle(fontSize: 12),
@@ -53,7 +59,7 @@ class _StartJobTicket extends State<StartJobTicket> {
     return Screenshot(
       controller: viewModel.screenshotController,
       child: Container(
-        color: Theme.of(context).scaffoldBackgroundColor, // Importante para que el screenshot no salga negro
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.only(
@@ -68,7 +74,10 @@ class _StartJobTicket extends State<StartJobTicket> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _header( viewModel ),
+                  header( context,"Iniciar ticket", (){
+                    viewModel.disconnectSocket();
+                    Navigator.pop(context);
+                  } ),
                   const SizedBox(height: 16),
                   textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company.toString(), readOnly: true ),
                   const SizedBox(height: 16),
@@ -78,7 +87,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                   const SizedBox(height: 10),
                   textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
                   const SizedBox(height: 10),
-                  _card(
+                  card(
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -181,7 +190,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                     },
                     onImageDelete: (deletedItem) {
                       setState(() {
-                        // Solo limpiamos la validación si por alguna razón se eliminara un SCREENSHOT desde la UI
+
                         if (deletedItem['source'] == 'SCREENSHOT') {
                           viewModel.clearValidation(false);
                         }
@@ -210,39 +219,6 @@ class _StartJobTicket extends State<StartJobTicket> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _header( ListTicketViewmodel vm ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Iniciar ticket',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => {
-            vm.disconnectSocket(),
-            Navigator.pop(context)
-          },
-        )
-      ],
-    );
-  }
-
-  Widget _card({required Widget child}) {
-    return Card(
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
       ),
     );
   }

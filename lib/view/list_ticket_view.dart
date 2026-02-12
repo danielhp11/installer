@@ -14,14 +14,21 @@ class ListTicketView extends StatefulWidget {
 }
 
 class _ListTicketViewState extends State<ListTicketView> {
+
+
+  final DateTime today = DateTime.now();
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
-      // Cargamos los tickets iniciales
-      context.read<ListTicketViewmodel>().loadTickets();
-      
-      // Abrimos el diálogo de selección de empresa siempre al iniciar
+
+      final dateInit = "${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}";
+
+      final vm = context.read<ListTicketViewmodel>();
+      vm.controllerDateStart.text = dateInit;
+      vm.controllerDateEnd.text = dateInit;
+
       _showBranchSelectionDialog(context);
     });
   }
@@ -32,6 +39,7 @@ class _ListTicketViewState extends State<ListTicketView> {
     String company = UserSession().branchRoot;
     String nameUser = UserSession().nameUser;
     String nameType = UserSession().isMaster ? 'Master' : 'Instalador';
+
 
 
     return Scaffold(
@@ -159,7 +167,7 @@ class _ListTicketViewState extends State<ListTicketView> {
   void _selectBranch(BuildContext context, String branch) {
     UserSession().branchRoot = branch;
     Navigator.pop(context);
-    // Recargar tickets para la nueva rama seleccionada
+
     context.read<ListTicketViewmodel>().loadTickets();
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -169,6 +177,22 @@ class _ListTicketViewState extends State<ListTicketView> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _pickDate({bool isStartDate = true, required ListTicketViewmodel vm}) async {
+    DateTime? date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(today.year, today.month, today.day),
+    );
+
+    TextEditingController controller = isStartDate? vm.controllerDateStart: vm.controllerDateEnd;
+
+    if (date != null) {
+      controller.text = "${date.day}/${date.month}/${date.year}";
+      vm.loadTickets();
+    }
   }
 
   Widget _buildFilters(ListTicketViewmodel vm) {
@@ -186,6 +210,35 @@ class _ListTicketViewState extends State<ListTicketView> {
             shape: WidgetStateProperty.all(
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: vm.controllerDateStart,
+                  readOnly: true,
+                  onTap: () => _pickDate(vm: vm),
+                  decoration: const InputDecoration(
+                    labelText: "Fecha inicio",
+                    suffixIcon: Icon(Icons.calendar_month),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: vm.controllerDateEnd,
+                  readOnly: true,
+                  onTap: () => _pickDate(isStartDate: false, vm: vm),
+                  decoration: const InputDecoration(
+                    labelText: "Fecha final",
+                    suffixIcon: Icon(Icons.calendar_month),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(

@@ -11,28 +11,11 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  // final TextEditingController _emailController = TextEditingController();
-  // final TextEditingController _passwordController = TextEditingController();
-  // final _formKey = GlobalKey<FormState>();
-
-  // @override
-  // void dispose() {
-  //   _emailController.dispose();
-  //   _passwordController.dispose();
-  //   super.dispose();
-  // }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<LoginViewModel>(context);
 
-    // @override
-    // void initState() {
-    //   super.initState();
-    //
-    //   viewModel.emailController.text = "master@geovoy.com";
-    //   viewModel.passwordController.text = "admin";
-    // }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Iniciar Sesión')),
@@ -142,31 +125,6 @@ class _LoginViewState extends State<LoginView> {
                                },
                              ),
 
-                             // endregion INPUT PASSWORD
-
-                             // Keep Session Checkbox
-                             // Row(
-                             //   children: [
-                             //     Checkbox(
-                             //       value: _keepSession,
-                             //       activeColor: AppColors.buttonNavy,
-                             //       onChanged: (value) {
-                             //         setState(() {
-                             //           _keepSession = value ?? false;
-                             //         });
-                             //       },
-                             //     ),
-                             //     const Expanded(
-                             //       child: Text(
-                             //         'Mantener sesión iniciada',
-                             //         style: TextStyle(
-                             //           color: Colors.black87,
-                             //           fontWeight: FontWeight.w600,
-                             //         ),
-                             //       ),
-                             //     ),
-                             //   ],
-                             // ),
                              const SizedBox(height: 20),
 
                              // Login Button
@@ -196,76 +154,6 @@ class _LoginViewState extends State<LoginView> {
                                },
                                child: const Text('Entrar'),
                              ),
-                             // Consumer<LoginViewModel>(
-                             //   builder: (context, viewModel, child) {
-                             //     return Column(
-                             //       children: [
-                             //         // Error message display
-                             //         if (viewModel.errorMessage != null)
-                             //           Container(
-                             //             padding: const EdgeInsets.all(12),
-                             //             margin: const EdgeInsets.only(bottom: 12),
-                             //             decoration: BoxDecoration(
-                             //               color: Colors.red.shade50,
-                             //               borderRadius: BorderRadius.circular(8),
-                             //               border: Border.all(color: Colors.red.shade300),
-                             //             ),
-                             //             child: Row(
-                             //               children: [
-                             //                 Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                             //                 const SizedBox(width: 8),
-                             //                 Expanded(
-                             //                   child: Text(
-                             //                     viewModel.errorMessage!,
-                             //                     style: TextStyle(
-                             //                       color: Colors.red.shade700,
-                             //                       fontSize: 14,
-                             //                     ),
-                             //                   ),
-                             //                 ),
-                             //               ],
-                             //             ),
-                             //           ),
-                             //         SizedBox(
-                             //           width: double.infinity,
-                             //           height: 50,
-                             //           child: ElevatedButton(
-                             //             onPressed: viewModel.isLoading
-                             //                 ? null
-                             //                 : () {
-                             //               // Clear previous error
-                             //               // viewModel.clearError();
-                             //               // _showCompanySelectionModal(context);
-                             //             },
-                             //             style: ElevatedButton.styleFrom(
-                             //               shape: RoundedRectangleBorder(
-                             //                 borderRadius: BorderRadius.circular(10.0),
-                             //               ),
-                             //               elevation: 2,
-                             //             ),
-                             //             child: viewModel.isLoading
-                             //                 ? const SizedBox(
-                             //               height: 20,
-                             //               width: 20,
-                             //               child: CircularProgressIndicator(
-                             //                 color: Colors.white,
-                             //                 strokeWidth: 2,
-                             //               ),
-                             //             )
-                             //                 : const Text(
-                             //               'INGRESAR',
-                             //               style: TextStyle(
-                             //                 color: Colors.white,
-                             //                 fontSize: 16,
-                             //                 fontWeight: FontWeight.bold,
-                             //               ),
-                             //             ),
-                             //           ),
-                             //         ),
-                             //       ],
-                             //     );
-                             //   },
-                             // ),
                            ],
                          ),
                        ),
@@ -298,68 +186,8 @@ class _LoginViewState extends State<LoginView> {
 
        ],
 
-
       )
-      // Padding(
-      //   padding: const EdgeInsets.all(24.0),
-      //   child: Form(
-      //     key: viewModel.formKey,
-      //     child: Column(
-      //       mainAxisAlignment: MainAxisAlignment.center,
-      //       crossAxisAlignment: CrossAxisAlignment.stretch,
-      //       children: [
-      //         TextFormField(
-      //           controller: viewModel.emailController,
-      //           decoration: const InputDecoration(
-      //             labelText: 'Correo Electrónico',
-      //             prefixIcon: Icon(Icons.email),
-      //           ),
-      //           keyboardType: TextInputType.emailAddress,
-      //           validator: (value) =>
-      //               (value == null || !value.contains('@')) ? 'Email inválido' : null,
-      //         ),
-      //         const SizedBox(height: 16),
-      //         TextFormField(
-      //           controller: viewModel.passwordController,
-      //           decoration: const InputDecoration(
-      //             labelText: 'Contraseña',
-      //             prefixIcon: Icon(Icons.lock),
-      //           ),
-      //           obscureText: true,
-      //           validator: (value) =>
-      //               (value == null || value.length < 4) ? 'Mínimo 4 caracteres' : null,
-      //         ),
-      //         const SizedBox(height: 24),
-      //         viewModel.isLoading
-      //             ? const Center(child: CircularProgressIndicator())
-      //             : ElevatedButton(
-      //                 onPressed: () async {
-      //                   if (viewModel.formKey.currentState!.validate()) {
-      //                     final success = await viewModel.login(
-      //                       viewModel.emailController.text,
-      //                       viewModel.passwordController.text,
-      //                     );
-      //
-      //                     if (!mounted) return;
-      //
-      //                     if (success) {
-      //                       Navigator.pushReplacement(
-      //                         context,
-      //                         MaterialPageRoute(builder: (context) => const ListTicketView()),
-      //                       );
-      //                     } else {
-      //                       ScaffoldMessenger.of(context).showSnackBar(
-      //                         const SnackBar(content: Text('Credenciales incorrectas')),
-      //                       );
-      //                     }
-      //                   }
-      //                 },
-      //                 child: const Text('Entrar'),
-      //               ),
-      //       ],
-      //     ),
-      //   ),
-      // ),
+
     );
   }
 }

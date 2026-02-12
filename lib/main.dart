@@ -8,7 +8,6 @@ import 'view/login_view.dart';
 import 'viewModel/login_viewmodel.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
 
   await UserSession().init();
@@ -29,15 +28,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Si el usuario ya está logueado, podrías cambiar LoginView() por ListTicketView() aquí.
-    // print("isLogin => ${UserSession().isLogin}");
-
     return MaterialApp(
       title: 'Gestor de Tickets',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: UserSession().isLogin ? const ListTicketView() : const LoginView()
-      ,
+      home: UserSession().isLogin ? const ListTicketView() : const LoginView(),
     );
   }
 }

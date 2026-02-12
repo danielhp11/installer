@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
+import '../../../widget/card_widget.dart';
+import '../../../widget/header_widget.dart';
 import '../../../widget/selector_field.dart';
 import '../../../widget/text_field_widget.dart';
 
@@ -29,54 +31,58 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
 
   Future<void> _initData() async {
     final vm = context.read<ListTicketViewmodel>();
-    
-    // Cargamos instaladores
+
+    vm.isLoadNewUpdate = true;
     vm.getInstaller();
-    
-    // Cargamos y combinamos unidades de Busmen y Temsa
+
     await vm.loadExternalUnits(UserSession().branchRoot);
 
     if (widget.ticket != null) {
-      // Editar: llenar con datos
+
       if (mounted) {
         vm.companyController.text = widget.ticket!.company ?? '';
         vm.installerController.text = widget.ticket!.technicianName;
-        print("installerController =>${vm.installerController.text}");
+
         vm.unitController.text = widget.ticket!.unitId;
         vm.descriptionController.text = widget.ticket!.description;
         vm.selectedUnitId = widget.ticket!.unitId.toString() != "null"?  int.parse(widget.ticket!.unitId):0;
-        // Intentar auto-seleccionar la unidad si ya existe en la lista
+
         if (vm.units.contains(widget.ticket!.unitId)) {
           vm.setSelectedUnit(unit : widget.ticket!.unitId, company: widget.ticket!.company!, isInit: true);
         }
         setState(() {
           isUpdate = true;
         });
-        // print("Update ticket # ${widget.ticket?.id} => ${isUpdate}");
+
       }
     } else {
-      // Nuevo: Limpiar campos anteriores
+
       if (mounted) {
         vm.resetForm();
-        // Valor por defecto basado en la rama seleccionada
+
         vm.companyController.text = UserSession().branchRoot;
         if(!UserSession().isMaster){
           vm.installerId = UserSession().idUser;
           vm.installerController.text = UserSession().nameUser;
 
         }
-        print("installerController =>${vm.installerController.text} | ");
+
         setState(() {
           isUpdate = false;
         });
       }
     }
-
+    vm.isLoadNewUpdate = false;
   }
 
   @override
   Widget build(BuildContext context) {
+
     final viewModel = context.watch<ListTicketViewmodel>();
+
+    if (viewModel.isLoadNewUpdate) return const Center(child: CircularProgressIndicator());
+
+    String textTitle = isUpdate ? 'Actualizar ticket' : 'Crear ticket';
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -92,9 +98,13 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _header(),
+              header(
+                context,
+                textTitle,
+                () => Navigator.pop(context)
+              ),
               const SizedBox(height: 16),
-              _card(
+              card(
                 child: Column(
                   children: [
                     _branchField(viewModel),
@@ -147,37 +157,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-  // ================= UI =================
-
-  Widget _header() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-         Text(
-           isUpdate ? 'Actualizar ticket' : 'Crear ticket',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        )
-      ],
-    );
-  }
-
-  Widget _card({required Widget child}) {
-    return Card(
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade300),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
-      ),
-    );
-  }
+  //  INPUTS SELECTED
 
   Widget _branchField(ListTicketViewmodel vm) {
     return SelectorField(
@@ -208,8 +188,6 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     );
   }
 
-
-  // ================= LOGIC =================
 
   Future<void> _selectBranch(ListTicketViewmodel vm) async {
     showModalBottomSheet(
@@ -260,83 +238,161 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
   }
 
   Future<void> _selectInstaller(ListTicketViewmodel vm) async {
+    List<ApiResInstaller> filteredInstallers = List.from(vm.installers);
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)), // 432
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Seleccionar Instalador',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: vm.installers.length,
-                  itemBuilder: (context, index) {
-                    final installer = vm.installers[index];
-                    return ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person)),
-                      title: Text(installer.full_name),
-                      subtitle: Text(installer.email),
-                      onTap: () {
-                        vm.setSelectedInstaller(installer);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Seleccionar Instalador',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar instalador...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                        ),
+                        onChanged: (value) {
+                          setModalState(() {
+                            filteredInstallers = vm.installers
+                                .where((i) => i.full_name.toLowerCase().contains(value.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                      ),
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: filteredInstallers.isEmpty
+                          ? const Center(child: Text('No se encontraron instaladores'))
+                          : ListView.builder(
+                              itemCount: filteredInstallers.length,
+                              itemBuilder: (context, index) {
+                                final installer = filteredInstallers[index];
+                                return ListTile(
+                                  leading: const CircleAvatar(child: Icon(Icons.person)),
+                                  title: Text(installer.full_name),
+                                  subtitle: Text(installer.email),
+                                  onTap: () {
+                                    vm.setSelectedInstaller(installer);
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
   Future<void> _selectUnit(ListTicketViewmodel vm) async {
+    List<String> filteredUnits = List.from(vm.units);
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Seleccionar Unidad',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: vm.units.length,
-                  itemBuilder: (context, index) {
-                    final unit = vm.units[index];
-                    return ListTile(
-                      leading: const Icon(Icons.directions_car),
-                      title: Text(unit),
-                      onTap: () {
-                        print(unit);
-                        print(index);
-                        vm.setSelectedUnit(unit: unit, company: vm.companyController.text, isInit: false);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Seleccionar Unidad',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar unidad...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                        ),
+                        onChanged: (value) {
+                          setModalState(() {
+                            filteredUnits = vm.units
+                                .where((u) => u.toLowerCase().contains(value.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                      ),
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: filteredUnits.isEmpty
+                          ? const Center(child: Text('No se encontraron unidades'))
+                          : ListView.builder(
+                              itemCount: filteredUnits.length,
+                              itemBuilder: (context, index) {
+                                final unit = filteredUnits[index];
+                                return ListTile(
+                                  leading: const Icon(Icons.directions_car),
+                                  title: Text(unit),
+                                  onTap: () {
+                                    vm.setSelectedUnit(
+                                      unit: unit,
+                                      company: vm.companyController.text,
+                                      isInit: false,
+                                    );
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

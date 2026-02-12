@@ -3,13 +3,13 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF1D61E7); // Requested Color
-  static const Color accentColor = Color(0xFFF0F4FF); // Light Blue for backgrounds
+  static const Color primaryColor = Color(0xFF1D61E7);
+  static const Color accentColor = Color(0xFFF0F4FF);
 
   // Status Colors
-  static const Color statusNew = Color(0xFF2196F3);      // Professional Blue
-  static const Color statusInReview = Color(0xFFFF9800); // Warning Orange
-  static const Color statusFinished = Color(0xFF2E7D32); // Professional Emerald Green (Darker)
+  static const Color statusNew = Color(0xFF2196F3);
+  static const Color statusInReview = Color(0xFFFF9800);
+  static const Color statusFinished = Color(0xFF2E7D32);
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -22,7 +22,7 @@ class AppTheme {
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: primaryColor,
-        foregroundColor: Colors.white, // White text/icons
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),

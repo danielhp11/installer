@@ -31,12 +31,8 @@ class SocketServ {
     // "wss://rastreotemsa.geovoy.com/api/socket"
     final uri = company.toUpperCase() == "BUSMEN"? Uri.parse("wss://rastreobusmen.geovoy.com/api/socket"):
     Uri.parse("wss://rastreotemsa.geovoy.com/api/socket");
-    // final uri = Uri.parse("wss://rastreobusmen.geovoy.com/api/socket");
 
     try {
-      print("Intentando conectar WebSocket...");
-      print("$uri");
-      print("_cookie $_cookie");
 
       _ws = await WebSocket.connect(
         uri.toString(),
@@ -45,7 +41,6 @@ class SocketServ {
         },
       );
 
-      print("WEBSOCKET => CONECTADO");
 
       _ws!.listen(
             (message) {
@@ -77,7 +72,7 @@ class SocketServ {
         },
 
         onDone: () {
-          print("WS DESCONECTADO");
+
           _ws = null;
           if (!_intentionalDisconnect) {
             reconnect(company);
