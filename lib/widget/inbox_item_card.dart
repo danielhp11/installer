@@ -158,9 +158,8 @@ class InboxItemCard extends StatelessWidget {
                     _actionIcon(
                       icon: Icons.task_alt,
                       color: _getBadgeColor(),
-                      visible: true,
-                      // visible: !UserSession().isMaster &&
-                      //     item.status == statusProcess,
+                      visible: !UserSession().isMaster &&
+                          item.status == statusProcess,
                       onTap: () =>
                           showCloseJobFormBottomSheet(context, item),
                     ),

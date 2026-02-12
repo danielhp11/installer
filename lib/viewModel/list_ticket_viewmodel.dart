@@ -255,24 +255,29 @@ class ListTicketViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadExternalUnits(String nameCompany) async {
+  Future<void> loadExternalUnits(String nameCompany, {bool forceRefresh = false}) async {
     final serv = RequestServ.instance;
     try {
-      final busmenUnits =  await serv.fetchStatusDevice(isTemsa: false);
-      final temsaUnits = await serv.fetchStatusDevice(isTemsa: true);
-
       List<String> combinedNames = [];
       bool isBusmenUnit = nameCompany == 'BUSMEN';
 
-      if (busmenUnits != null && isBusmenUnit ) {
-        // Ordenamos objetos para que coincidan con la lista de nombres
-        busmenUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
-        localUnitBusmen = busmenUnits;
+      if (isBusmenUnit) {
+        if (localUnitBusmen.isEmpty || forceRefresh) {
+          final busmenUnits = await serv.fetchStatusDevice(isTemsa: false);
+          if (busmenUnits != null) {
+            busmenUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
+            localUnitBusmen = busmenUnits;
+          }
+        }
         combinedNames.addAll(localUnitBusmen.map((u) => u.name.toString()));
-      }
-      if (temsaUnits != null && !isBusmenUnit) {
-        temsaUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
-        localUnitTemsa = temsaUnits;
+      } else {
+        if (localUnitTemsa.isEmpty || forceRefresh) {
+          final temsaUnits = await serv.fetchStatusDevice(isTemsa: true);
+          if (temsaUnits != null) {
+            temsaUnits.sort((a, b) => a.name.toString().toLowerCase().compareTo(b.name.toString().toLowerCase()));
+            localUnitTemsa = temsaUnits;
+          }
+        }
         combinedNames.addAll(localUnitTemsa.map((u) => u.name.toString()));
       }
 
@@ -504,7 +509,9 @@ class ListTicketViewmodel extends ChangeNotifier {
   // endregion BTN SHEET NEW TICKET VIEW
 
   // region GET INSTALLER
-    Future<void> getInstaller() async {
+    Future<void> getInstaller({bool forceRefresh = false}) async {
+      if (_installers.isNotEmpty && !forceRefresh) return;
+
       final serv = RequestServ.instance;
       try{
         List<ApiResInstaller>? installers = await serv.handlingRequestParsed<List<ApiResInstaller>>(
@@ -512,14 +519,12 @@ class ListTicketViewmodel extends ChangeNotifier {
           method: "GET",
           asJson: true,
           fromJson: (json) {
-            print("json user => $json");
             final list = json as List<dynamic>;
             return list.map((item) => ApiResInstaller.fromJson(item)).toList();
           },
         );
 
         _installers = installers ?? [];
-        print("installers => $installers | $_installers");
 
         if (installerController.text.isNotEmpty && _installers.isNotEmpty) {
           try {
@@ -775,7 +780,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     final pos = positions.first;
     final deviceId = pos['deviceId'] as int;
-
+    print("deviceId => $deviceId==${int.parse(idTicket)} | ${deviceId == int.parse(idTicket)}");
     if( deviceId == int.parse(idTicket) ){
 
       _isDownloadEnabled = true;
