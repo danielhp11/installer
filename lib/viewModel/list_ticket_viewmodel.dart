@@ -512,12 +512,14 @@ class ListTicketViewmodel extends ChangeNotifier {
           method: "GET",
           asJson: true,
           fromJson: (json) {
+            print("json user => $json");
             final list = json as List<dynamic>;
             return list.map((item) => ApiResInstaller.fromJson(item)).toList();
           },
         );
 
         _installers = installers ?? [];
+        print("installers => $installers | $_installers");
 
         if (installerController.text.isNotEmpty && _installers.isNotEmpty) {
           try {

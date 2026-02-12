@@ -244,7 +244,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)), // 432
       ),
       builder: (context) {
         return StatefulBuilder(

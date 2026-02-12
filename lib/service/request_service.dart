@@ -4,10 +4,10 @@ import 'response_service.dart';
 
 class RequestServ {
 
-  static const String baseUrlNor = "http://172.16.2.147:8000/";
+  static const String baseUrlNor = "https://instaladores.geovoy.com/api/";
 
   static const String urlAuthentication = "auth/login";
-  static const String urlGetTickets = "tickets";
+  static const String urlGetTickets = "tickets/";
   static const String urlInstaller = "users/?all=false";
   static const String urlSendStartJobEvidence = "tickets/upload";
 
