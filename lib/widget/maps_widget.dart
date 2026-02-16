@@ -12,12 +12,14 @@ import '../service/response_service.dart';
 
 class CustomGoogleMap extends StatefulWidget {
   final deviceId;
+  final isTicketClose;
   final double zoom;
 
   const CustomGoogleMap({
     Key? key,
     this.deviceId,
     this.zoom = 16,
+    this.isTicketClose = false,
   }) : super(key: key);
 
   @override
@@ -51,7 +53,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
         );
 
         if (mounted) {
-          print("=> ${response['deviceTime']}");
+          //print("=> ${response['deviceTime']}");
           setState(() {
             nameUnit = responseStatus['name'] as String;
             latUnit = response['latitude'] as double;
@@ -113,11 +115,11 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () async {
-                    await viewModel.takeScreenshotAndSave(false);
+                    await viewModel.takeScreenshotAndSaveMaps(widget.isTicketClose);
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: viewModel.isValidateComponent? Colors.green :Colors.blue, // color del borde
+                      color: viewModel.isEvidenceUnitUserClose || viewModel.isEvidenceUnitUserStart ? Colors.green :Colors.blue, // color del borde
                       width: 2,
                     ),
                   ),

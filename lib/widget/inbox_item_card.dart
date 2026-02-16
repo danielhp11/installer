@@ -31,7 +31,7 @@ class InboxItemCard extends StatelessWidget {
     final bool isClosed = item.status == "CERRADO";
     final bool isCancel = item.status == "CANCELADO";
     final viewModel = context.watch<ListTicketViewmodel>();
-    print("=> InboxItemCard: ${item.unitId} ${item.status}");
+    //print("=> InboxItemCard: ${item.unitId} ${item.status}");
 
     // print(item.create_at);
 
