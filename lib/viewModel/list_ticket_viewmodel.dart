@@ -659,7 +659,10 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       if (!formKeyStartJob.currentState!.validate()) return;
 
-      if( evidencePhotos.isEmpty ) {
+
+
+
+      if( evidencePhotos.length < 2 ) {
         AnimatedResultDialog.showError(
             context,
             title: "No hay evidencias",
@@ -667,6 +670,9 @@ class ListTicketViewmodel extends ChangeNotifier {
         );
         return;
       }
+
+      // return;
+      print("=> ${evidencePhotos.length}");
 
       /*if( urlImgValidate == null ) {
         AnimatedResultDialog.showError(

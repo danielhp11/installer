@@ -10,6 +10,7 @@ import '../../../widget/card_widget.dart';
 import '../../../widget/evidence_grid.dart';
 import '../../../widget/header_widget.dart';
 import '../../../widget/text_field_widget.dart';
+import '../../../widget/maps_widget.dart';
 
 class CloseJobTicket extends StatefulWidget {
 
@@ -168,6 +169,16 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                         ],
                       )
                     ),
+
+
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 500,
+                      child: CustomGoogleMap(
+                        deviceId: widget.ticket.unitId,
+                      ),
+                    ),
+
                     const SizedBox(height: 10),
                     infoText(
                         text: lenEvidencteText,

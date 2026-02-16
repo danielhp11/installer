@@ -31,7 +31,7 @@ class InboxItemCard extends StatelessWidget {
     final bool isClosed = item.status == "CERRADO";
     final bool isCancel = item.status == "CANCELADO";
     final viewModel = context.watch<ListTicketViewmodel>();
-    // print("=> InboxItemCard: ${item.history?.last.notes}");
+    print("=> InboxItemCard: ${item.unitId} ${item.status}");
 
     // print(item.create_at);
 
@@ -150,17 +150,15 @@ class InboxItemCard extends StatelessWidget {
                     _actionIcon(
                       icon: Icons.construction,
                       color: _getBadgeColor(),
-                      visible: true,
-                      // visible: !UserSession().isMaster &&
-                      //    item.status == statusOpen,
+                      visible: !UserSession().isMaster &&
+                         item.status == statusOpen,
                       onTap: () =>
                           showStarJobFormBottomSheet(context, item),
                     ),
                     _actionIcon(
                       icon: Icons.task_alt,
                       color: _getBadgeColor(),
-                      visible: !UserSession().isMaster &&
-                          item.status == statusClosed && item.status == statusCancel,
+                      visible: !UserSession().isMaster && item.status == statusProcess,
                       onTap: () =>
                           showCloseJobFormBottomSheet(context, item),
                     ),

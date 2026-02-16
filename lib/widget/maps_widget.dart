@@ -6,6 +6,7 @@ import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:instaladores_new/widget/card_widget.dart';
 import 'package:instaladores_new/widget/text_field_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import '../service/response_service.dart';
 
@@ -40,31 +41,34 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     _loadCustomMarker();
 
     Future.microtask(() async {
-
-      final responseStatus = await context.read<ListTicketViewmodel>().getStatusDevice(
-          idDevice: int.parse(widget.deviceId.toString())
-      );
-
-      final response = await context.read<ListTicketViewmodel>().getPositionDevice(
-          idDevice: int.parse(widget.deviceId.toString())
-      );
-
-      if (mounted) {
-        setState(() {
-          nameUnit = responseStatus['name'] as String;
-          latUnit = response['latitude'] as double;
-          longUnit = response['longitude'] as double;
-          status = response['attributes']['ignition'] as bool;
-          battery = response['attributes']['battery'] as double;
-          date = response['deviceTime'] as String;
-        });
-
-        // Mover la cámara a la nueva posición
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(LatLng(latUnit, longUnit)),
+      try {
+        final responseStatus = await context.read<ListTicketViewmodel>().getStatusDevice(
+            idDevice: int.parse(widget.deviceId.toString())
         );
-      }
 
+        final response = await context.read<ListTicketViewmodel>().getPositionDevice(
+            idDevice: int.parse(widget.deviceId.toString())
+        );
+
+        if (mounted) {
+          print("=> ${response['deviceTime']}");
+          setState(() {
+            nameUnit = responseStatus['name'] as String;
+            latUnit = response['latitude'] as double;
+            longUnit = response['longitude'] as double;
+            status = response['attributes']['ignition'] as bool;
+            battery = response['attributes']['battery'] as double;
+            date = parseDateDevice(response['deviceTime'] as String);
+          });
+
+          // Mover la cámara a la nueva posición
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLng(LatLng(latUnit, longUnit)),
+          );
+        }
+      } catch (e) {
+        debugPrint("Error al obtener posición: $e");
+      }
     });
   }
 
@@ -77,7 +81,6 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
 
   Future<void> _loadCustomMarker() async {
     try {
-      // Cargamos el icono con un tamaño controlado (ej. 100px) para evitar errores de memoria o renderizado
       final Uint8List markerIcon = await getBytesFromAsset('assets/images/icons/bus_icon.png', 100);
       
       if (mounted) {
@@ -87,13 +90,19 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
       }
     } catch (e) {
       debugPrint("Error cargando el marcador personalizado: $e");
-      // En caso de error, el marcador usará el icono por defecto automáticamente
     }
+  }
+
+  String parseDateDevice (String dateStr){
+    DateTime parsedDate = DateTime.parse(dateStr).toLocal();
+
+    return DateFormat('dd/MM/yyyy HH:mm:ss').format(parsedDate);
   }
 
   @override
   Widget build(BuildContext context) {
-    final ListTicketViewmodel viewModel = context.watch<ListTicketViewmodel>();
+
+    final viewModel = context.watch<ListTicketViewmodel>();
 
     return card(
       child: Column(
@@ -103,25 +112,28 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {
-                    print("Text button pressed");
+                  onPressed: () async {
+                    await viewModel.takeScreenshotAndSave(false);
                   },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: viewModel.isValidateComponent? Colors.green :Colors.blue, // color del borde
+                      width: 2,
+                    ),
+                  ),
                   child: const Text("Evidencia de posición de la unidad e instalador"),
                 )
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: IconButton(
-                  onPressed: () {
-                    print("Icon pressed");
-                  },
+                  onPressed: () {},
                   icon: Image.asset(
                     'assets/images/icons/motor.png',
                     width: 44,
                     height: 44,
                   ),
                 )
-
               ),
             ],
           ),
@@ -137,11 +149,19 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                 onMapCreated: (controller) {
                   _mapController = controller;
                 },
+                onCameraIdle: () {
+                  // Cada vez que la cámara deja de moverse (por animación o arrastre),
+                  // forzamos que se muestre el InfoWindow.
+                  _mapController?.showMarkerInfoWindow(const MarkerId("main_marker"));
+                },
                 markers: {
                   Marker(
                     markerId: const MarkerId("main_marker"),
                     position: LatLng(latUnit, longUnit),
-                    // Usamos _customIcon si ya cargó, de lo contrario el default
+                    infoWindow: InfoWindow(
+                      title: "Posición:",
+                      snippet: "$latUnit, $longUnit",
+                    ),
                     icon: _customIcon ?? BitmapDescriptor.defaultMarker,
                   ),
                 },
@@ -160,7 +180,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                 children: [
                   Expanded(
                     child: infoText(
-                      text: "Unidad: ${nameUnit}",
+                      text: "Unidad: $nameUnit",
                       textAlign: TextAlign.start,
                       styles: const TextStyle(
                         fontSize: 14,
