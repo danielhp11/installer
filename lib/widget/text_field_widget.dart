@@ -52,9 +52,11 @@ TextStyle defaultStyleText = TextStyle(
 Widget infoText({
   String text = "",
   TextStyle? styles,
+  TextAlign textAlign = TextAlign.center,
 }) {
   return Text(
     text,
+    textAlign: textAlign,
     style: styles ?? defaultStyleText,
   );
 }
