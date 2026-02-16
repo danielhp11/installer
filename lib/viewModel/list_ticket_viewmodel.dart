@@ -310,7 +310,9 @@ class ListTicketViewmodel extends ChangeNotifier {
     panicoController.text = "Cargando botón...";
     _isDownloadEnabled = false;
     isValidateComponent = false;
-    urlImgValidate = null;
+    isEvidenceUnitUserStart = false;
+    urlImgComponent = null;
+    urlImgMaps = null;
     notifyListeners();
   }
 
@@ -356,26 +358,33 @@ class ListTicketViewmodel extends ChangeNotifier {
   // region BTN SHEET CLOSE JOB TICKET VIEW
   final formKeyCloseJob = GlobalKey<FormState>();
   TextEditingController descriptionCloseController = TextEditingController();
+  TextEditingController unitModelCloseController = TextEditingController();
   final ScreenshotController screenshotCloseController = ScreenshotController();
   List<Map<String, String>> evidenceClosePhotos = [];
+  bool isEvidenceUnitUserClose = false;
+  bool isEvidenceUnitUserStart = false;
   bool isLoadingClose = false;
 
 
   void resetEvidenceClose() {
     evidenceClosePhotos = [];
     descriptionCloseController.clear();
+    unitModelCloseController.clear();
     lectorasController.text = "Cargando lectoras...";
     panicoController.text = "Cargando botón...";
     _isDownloadEnabled = false;
     isValidateComponent = false;
-    urlImgValidate = null;
+    isEvidenceUnitUserClose = false;
+    urlImgComponent = null;
+    urlImgMaps = null;
     notifyListeners();
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
 
   // region SOCKET
   bool isValidateComponent = false;
-  String? urlImgValidate;
+  String? urlImgComponent;
+  String? urlImgMaps;
   // endregion SOCKET
 
   /*================ FUNCTIONS =================*/
@@ -669,9 +678,9 @@ class ListTicketViewmodel extends ChangeNotifier {
       }
 
       // return;
-      print("=> ${evidencePhotos.length}");
+      //print("=> ${evidencePhotos.length}");
 
-      /*if( urlImgValidate == null ) {
+      /*if( urlImgComponent == null ) {
         AnimatedResultDialog.showError(
             context,
             title: "No hay validacion",
@@ -733,7 +742,24 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     if (!formKeyCloseJob.currentState!.validate()) return;
 
-    if( evidenceClosePhotos.isEmpty ) {
+    if(!isEvidenceUnitUserClose){
+      AnimatedResultDialog.showError(
+          context,
+          title: "No hay evidencias",
+          message: "Por lo menos una foto es requerida del mapa y la undiad"
+      );
+      return;
+    }
+    if(!isValidateComponent){
+      AnimatedResultDialog.showError(
+          context,
+          title: "No hay evidencias",
+          message: "Asegúrate de que los componentes funcionen correctamente."
+      );
+      return;
+    }
+
+    if( evidenceClosePhotos.length < 3 ) {
       AnimatedResultDialog.showError(
           context,
           title: "No hay evidencias",
@@ -742,7 +768,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       return;
     }
 
-    if( urlImgValidate == null ) {
+    if( urlImgComponent == null ) {
       AnimatedResultDialog.showError(
           context,
           title: "No hay validacion",
@@ -751,7 +777,7 @@ class ListTicketViewmodel extends ChangeNotifier {
         return;
       }
 
-
+    // return; // Se asume que esto estaba para pruebas, pero lo dejo por si acaso o lo comento si estorba
     try{
 
       List<Map<String, dynamic>> photosToSync = [];
@@ -826,13 +852,13 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       _isDownloadEnabled = true;
       notifyListeners();
-      print("data socket => $pos");
-      print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+      //print("data socket => $pos");
+      //print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
       bool btnPanicEventOne = pos["attributes"]["di2"] != "null" && pos["attributes"]["di2"] == "true" ;
       bool btnPanicEventTwo = pos["attributes"]["in2"] != "null" && pos["attributes"]["in2"] == "true" ;
-      print("${pos["attributes"]["di2"]} $btnPanicEventOne");
-      print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
-      print("${btnPanicEventOne || btnPanicEventTwo}");
+      //print("${pos["attributes"]["di2"]} $btnPanicEventOne");
+      //print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
+      //print("${btnPanicEventOne || btnPanicEventTwo}");
 
       panicoController.text = btnPanicEventOne || btnPanicEventTwo? "Verificación correcta" :"Esperando evento...";
 
@@ -920,6 +946,36 @@ class ListTicketViewmodel extends ChangeNotifier {
     );
   }
 
+  Future<void> takeScreenshotAndSaveMaps( bool isClose ) async {
+    try {
+      final controller = isClose ? screenshotCloseController : screenshotController;
+      final image = await controller.capture();
+      if (image == null) return;
+
+      final directory = await getTemporaryDirectory();
+      final filePath =
+          '${directory.path}/validate_maps_${DateTime.now().millisecondsSinceEpoch}.png';
+
+      final file = File(filePath);
+      await file.writeAsBytes(image);
+
+      // Guardamos la ruta con el origen SCREENSHOT_MAPS
+      if (isClose) {
+        evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_MAPS');
+        evidenceClosePhotos.add({"path": filePath, "source": "SCREENSHOT_MAPS"});
+        isEvidenceUnitUserClose = true;
+      } else {
+        evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_MAPS');
+        evidencePhotos.add({"path": filePath, "source": "SCREENSHOT_MAPS"});
+        isEvidenceUnitUserStart = true;
+      }
+      urlImgMaps = filePath;
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error capturing screenshot: $e");
+    }
+  }
 
   Future<void> takeScreenshotAndSave( bool isClose ) async {
     try {
@@ -929,22 +985,21 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       final directory = await getTemporaryDirectory();
       final filePath =
-          '${directory.path}/validate_${DateTime.now().millisecondsSinceEpoch}.png';
+          '${directory.path}/validate_comp_${DateTime.now().millisecondsSinceEpoch}.png';
 
       final file = File(filePath);
       await file.writeAsBytes(image);
 
-      // Guardamos la ruta con el origen SCREENSHOT
+      // Guardamos la ruta con el origen SCREENSHOT_COMPONENTS
       if (isClose) {
-        evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
-        evidenceClosePhotos.add({"path": filePath, "source": "SCREENSHOT"});
+        evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_COMPONENTS');
+        evidenceClosePhotos.add({"path": filePath, "source": "SCREENSHOT_COMPONENTS"});
       } else {
-        evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
-        evidencePhotos.add({"path": filePath, "source": "SCREENSHOT"});
+        evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_COMPONENTS');
+        evidencePhotos.add({"path": filePath, "source": "SCREENSHOT_COMPONENTS"});
       }
-
-      urlImgValidate = filePath;
       isValidateComponent = true;
+      urlImgComponent = filePath;
 
       notifyListeners();
     } catch (e) {
@@ -954,11 +1009,16 @@ class ListTicketViewmodel extends ChangeNotifier {
 
   void clearValidation(bool isClose) {
     if (isClose) {
-      evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+      evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_COMPONENTS');
+      evidenceClosePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_MAPS');
+      isEvidenceUnitUserClose = false;
     } else {
-      evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT');
+      evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_COMPONENTS');
+      evidencePhotos.removeWhere((img) => img['source'] == 'SCREENSHOT_MAPS');
+      isEvidenceUnitUserStart = false;
     }
-    urlImgValidate = null;
+    urlImgComponent = null;
+    urlImgMaps = null;
     isValidateComponent = false;
     notifyListeners();
   }

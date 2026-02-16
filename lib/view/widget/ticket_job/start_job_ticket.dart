@@ -45,16 +45,19 @@ class _StartJobTicket extends State<StartJobTicket> {
     final ButtonStyle styleValidateBtn = ElevatedButton.styleFrom(
         textStyle: const TextStyle(fontSize: 12),
         visualDensity: VisualDensity.compact,
-      backgroundColor: viewModel.isValidateComponent && viewModel.urlImgValidate != null? Colors.green.shade600: Colors.blueAccent.shade400,
+      backgroundColor: viewModel.isValidateComponent && viewModel.urlImgComponent != null? Colors.green.shade600: Colors.blueAccent.shade400,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
         padding: EdgeInsets.zero,
     );
 
-    int lenEvidence = viewModel.evidencePhotos.where((img) => img['source'] != 'SCREENSHOT').length;
+    // Filtramos las capturas automáticas para el contador de fotos manuales
+    int lenEvidence = viewModel.evidencePhotos.where((img) => 
+      img['source'] != 'SCREENSHOT_COMPONENTS' && img['source'] != 'SCREENSHOT_MAPS'
+    ).length;
 
-    String lenEvidencteText = lenEvidence > 0? "[$lenEvidence/6]":"[$lenEvidence/6] mínimo 1.";
+    String lenEvidencteText = "[$lenEvidence/6] mínimo 1.";
 
     return Screenshot(
       controller: viewModel.screenshotController,
@@ -218,6 +221,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                             borderRadius: BorderRadius.circular(12),
                             child: CustomGoogleMap(
                               deviceId: widget.ticket.unitId,
+                              isTicketClose: false,
                             ),
                           ),
                         ),
@@ -291,12 +295,16 @@ class _StartJobTicket extends State<StartJobTicket> {
                           },
                           onImageDelete: (deletedItem) {
                             setState(() {
-                              if (deletedItem['source'] == 'SCREENSHOT') {
-                                viewModel.clearValidation(false);
+                              if (deletedItem['source'] == 'SCREENSHOT_COMPONENTS') {
+                                viewModel.urlImgComponent = null;
+                                viewModel.isValidateComponent = false;
+                              } else if (deletedItem['source'] == 'SCREENSHOT_MAPS') {
+                                viewModel.urlImgMaps = null;
+                                viewModel.isEvidenceUnitUserStart = false;
                               }
                             });
                           },
-                          maxImages: 6,
+                          maxImages: 8,
                         ),
                       ],
                     ),

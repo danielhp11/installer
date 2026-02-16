@@ -43,15 +43,19 @@ class _CloseJobTicket extends State<CloseJobTicket> {
     final ButtonStyle styleValidateBtn = ElevatedButton.styleFrom(
       textStyle: const TextStyle(fontSize: 12),
       visualDensity: VisualDensity.compact,
-      backgroundColor: viewModel.isValidateComponent && viewModel.urlImgValidate != null? Colors.green.shade600: Colors.blueAccent.shade400,
+      backgroundColor: viewModel.isValidateComponent && viewModel.urlImgComponent != null? Colors.green.shade600: Colors.blueAccent.shade400,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
       ),
       padding: EdgeInsets.zero,
     );
-    int lenEvidence = viewModel.urlImgValidate != null? viewModel.evidenceClosePhotos.length-1:viewModel.evidenceClosePhotos.length;
+    
+    // Contamos fotos que NO sean capturas automáticas (mapas o componentes)
+    int lenEvidence = viewModel.evidenceClosePhotos.where((img) => 
+      img['source'] != 'SCREENSHOT_COMPONENTS' && img['source'] != 'SCREENSHOT_MAPS'
+    ).length;
 
-    String lenEvidencteText = lenEvidence > 0? "[${lenEvidence}/6]":"[${lenEvidence}/6] mínimo 1.";
+    String lenEvidencteText = "[$lenEvidence/6] mínimo 1.";
 
 
     return Screenshot(
@@ -128,7 +132,9 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                           const SizedBox(height: 12),
                           textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true, ),
                           const SizedBox(height: 12),
-                          textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
+                          textField(viewModel.unitModelCloseController, 'Modelo de unidad (*)', Icons.text_snippet_outlined),
+                          const SizedBox(height: 12),
+                          textField(viewModel.descriptionCloseController, 'Comentario e revisión (*)', Icons.text_snippet_outlined),
                         ],
                       ),
                     ),
@@ -187,10 +193,10 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                               const SizedBox(),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: viewModel.isDownloadEnabled && viewModel.urlImgValidate == null
+                                  onPressed: viewModel.isDownloadEnabled && viewModel.urlImgComponent == null
                                       ? () async {
                                     await viewModel.takeScreenshotAndSave(true);
-                                    if (mounted && viewModel.urlImgValidate != null) {
+                                    if (mounted && viewModel.urlImgComponent != null) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Evidencia capturada con éxito')),
                                       );
@@ -279,6 +285,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                         borderRadius: BorderRadius.circular(12),
                         child: CustomGoogleMap(
                           deviceId: widget.ticket.unitId,
+                          isTicketClose: true,
                         ),
                       ),
                     ),
@@ -335,7 +342,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                               text: lenEvidencteText,
                               styles: TextStyle(
                                 fontSize: 14,
-                                color: viewModel.evidenceClosePhotos.length > 0? Colors.green.shade600: Colors.red.shade600,
+                                color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
                                 fontWeight: FontWeight.w500,
                               )
                           ),
@@ -347,13 +354,18 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                                 viewModel.evidenceClosePhotos = images;
                               });
                             },
-                            onImageDelete: (_) {
+                            onImageDelete: (deletedItem) {
                               setState(() {
-                                viewModel.urlImgValidate = null;
-                                viewModel.isValidateComponent = false;
+                                if (deletedItem['source'] == 'SCREENSHOT_COMPONENTS') {
+                                  viewModel.urlImgComponent = null;
+                                  viewModel.isValidateComponent = false;
+                                } else if (deletedItem['source'] == 'SCREENSHOT_MAPS') {
+                                  viewModel.urlImgMaps = null;
+                                  viewModel.isEvidenceUnitUserClose = false;
+                                }
                               });
                             },
-                            maxImages: 6,
+                            maxImages: 8, // Aumentado para dar espacio a las automáticas
                           ),
                         ],
                       ),
