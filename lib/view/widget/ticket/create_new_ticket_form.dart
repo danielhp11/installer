@@ -8,6 +8,7 @@ import '../../../widget/card_widget.dart';
 import '../../../widget/header_widget.dart';
 import '../../../widget/selector_field.dart';
 import '../../../widget/text_field_widget.dart';
+import '../../../widget/evidence_grid.dart';
 
 class CreateNewTicketForm extends StatefulWidget {
 
@@ -22,6 +23,9 @@ class CreateNewTicketForm extends StatefulWidget {
 class _CreateNewTicketForm extends State<CreateNewTicketForm> {
 
   bool isUpdate = false;
+  final TextEditingController _modelController = TextEditingController();
+  List<Map<String, String>> _evidenceBefore = [];
+  List<Map<String, String>> _evidenceAfter = [];
 
   @override
   void initState() {
@@ -82,7 +86,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
 
     if (viewModel.isLoadNewUpdate) return const Center(child: CircularProgressIndicator());
 
-    String textTitle = isUpdate ? 'Actualizar ticket' : 'Crear ticket';
+    String textTitle = isUpdate ? 'Actualizar revisión' : 'Revisión de unidad';
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -120,7 +124,32 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                     const SizedBox(height: 16),
                     _unitField(viewModel),
                     const SizedBox(height: 16),
-                    textField(viewModel.descriptionController, 'Descripcion', Icons.text_snippet_outlined),
+                    textField(_modelController, 'Modelo de unidad', Icons.directions_bus_filled_outlined),
+                    const SizedBox(height: 16),
+                    textField(viewModel.descriptionController, 'Comentarios de revisión', Icons.text_snippet_outlined),
+                    const SizedBox(height: 16),
+                    const Text("Evidencia Antes", style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    EvidenceGrid(
+                      images: _evidenceBefore,
+                      onImagesChanged: (newImages) {
+                        setState(() {
+                          _evidenceBefore = newImages;
+                        });
+                      },
+                      maxImages: 6,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text("Evidencia Después", style: TextStyle(fontWeight: FontWeight.bold)),
+                    EvidenceGrid(
+                      images: _evidenceAfter,
+                      onImagesChanged: (newImages) {
+                        setState(() {
+                          _evidenceAfter = newImages;
+                        });
+                      },
+                      maxImages: 6,
+                    ),
                   ],
                 ),
               ),
@@ -145,7 +174,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                   ),
                 ),
                 child: Text(
-                  isUpdate ? 'Guardar' : 'Crear',
+                  isUpdate ? 'Guardar' : 'Enviar',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               )
