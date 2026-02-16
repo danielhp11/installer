@@ -76,177 +76,234 @@ class _StartJobTicket extends State<StartJobTicket> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  header( context,"Iniciar ticket", (){
+                  header( context,"Iniciar Trabajo", (){
                     viewModel.disconnectSocket();
                     Navigator.pop(context);
                   } ),
-                  const SizedBox(height: 16),
-                  textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company.toString(), readOnly: true ),
-                  const SizedBox(height: 16),
-                  textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
-                  const SizedBox(height: 16),
-                  textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true ),
-                  const SizedBox(height: 10),
-                  textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
-                  const SizedBox(height: 10),
-                  /*card(
+                  const SizedBox(height: 20),
+                  
+                  /// INFO SECTION
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función", readOnly: true ),
-                              ),
-                              const SizedBox(),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: viewModel.isDownloadEnabled && viewModel.urlImgValidate == null
-                                    ? () async {
-                                        await viewModel.takeScreenshotAndSave(false);
-                                        if (mounted && viewModel.urlImgValidate != null) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Evidencia capturada con éxito')),
-                                          );
-                                        }
-                                      }
-                                    : null,
-                                  icon: Icon(viewModel.isValidateComponent ? Icons.check_circle : Icons.camera_alt),
-                                  label: Text(viewModel.isValidateComponent ? "Evidencia lista" : "Tomar evidencia"),
-                                  style: styleValidateBtn,
-                                ),
-                              )
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child:  infoText(
-                                    text: "Lectoras",
-                                    styles: const TextStyle(
-                                      fontSize: 17,
-                                    )
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: viewModel.lectorasController,
-                                  readOnly: true,
-                                  keyboardType: TextInputType.text,
-                                  decoration: const InputDecoration(
-                                    labelText: "Estado",
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                              )
-                            ],
-                          ),
-
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: infoText(
-                                      text: "Botón de pánico",
-                                      styles: const TextStyle(
-                                        fontSize: 17,
-                                      )
-                                  )
-                              ),
-
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: viewModel.panicoController,
-                                  readOnly: true,
-                                  keyboardType: TextInputType.text,
-                                  decoration: const InputDecoration(
-                                    labelText: "Estado",
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                              )
-                            ],
-                          ),
-                        ],
-                    )
-                  ),*/
-                  card(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start, // 👈 important
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        infoText(
-                          text: "Validacion de corriente",
-                          textAlign: TextAlign.start,
-                          styles: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.info_outline_rounded,
+                                color: Theme.of(context).primaryColor,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Información del Trabajo',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
-
-                        infoText(
-                            text: "Validacion de tierra",
-                            textAlign:  TextAlign.start,
-                            styles: TextStyle(
-                              fontSize: 14,
-                              // color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
-                              fontWeight: FontWeight.w500,
-                            )
-                        ),
-
-                        const SizedBox(height: 10),
-                        infoText(
-                            text: "Validacion de ignicion",
-                            textAlign:  TextAlign.start,
-                            styles: TextStyle(
-                              fontSize: 14,
-                              // color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
-                              fontWeight: FontWeight.w500,
-                            )
-                        ),
-
+                        const SizedBox(height: 16),
+                        textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company.toString(), readOnly: true ),
+                        const SizedBox(height: 12),
+                        textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
+                        const SizedBox(height: 12),
+                        textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true ),
+                        const SizedBox(height: 12),
+                        textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 500,
-                    child: CustomGoogleMap(
-                      deviceId: widget.ticket.unitId,
+                  
+                  const SizedBox(height: 20),
+                  
+                  /// VALIDATION SECTION
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blue.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.check_circle_outline_rounded,
+                                color: Colors.blue.shade700,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Validación y Ubicación',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        Text(
+                          'Validación de corriente',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        
+                        Text(
+                          'Validación de tierra',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        
+                        Text(
+                          'Validación de ignición',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        SizedBox(
+                          height: 300,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CustomGoogleMap(
+                              deviceId: widget.ticket.unitId,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 10),
-                  infoText(
-                      text: lenEvidencteText,
-                      styles: TextStyle(
-                        fontSize: 14,
-                        color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
-                        fontWeight: FontWeight.w500,
-                      )
+                  const SizedBox(height: 20),
+                  
+                  /// EVIDENCE SECTION
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.green.shade700,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Evidencia Antes de Iniciar',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        infoText(
+                            text: lenEvidencteText,
+                            styles: TextStyle(
+                              fontSize: 14,
+                              color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
+                              fontWeight: FontWeight.w500,
+                            )
+                        ),
+                        const SizedBox(height: 12),
+                        EvidenceGrid(
+                          images: viewModel.evidencePhotos,
+                          onImagesChanged: (List<Map<String, String>> images) {
+                            setState(() {
+                              viewModel.evidencePhotos = images;
+                            });
+                          },
+                          onImageDelete: (deletedItem) {
+                            setState(() {
+                              if (deletedItem['source'] == 'SCREENSHOT') {
+                                viewModel.clearValidation(false);
+                              }
+                            });
+                          },
+                          maxImages: 6,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 3),
-                  EvidenceGrid(
-                    images: viewModel.evidencePhotos,
-                    onImagesChanged: (List<Map<String, String>> images) {
-                      setState(() {
-                        viewModel.evidencePhotos = images;
-                      });
-                    },
-                    onImageDelete: (deletedItem) {
-                      setState(() {
-
-                        if (deletedItem['source'] == 'SCREENSHOT') {
-                          viewModel.clearValidation(false);
-                        }
-                      });
-                    },
-                    maxImages: 6,
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
                       viewModel.sendEvidence(context: context, idTicket: widget.ticket.id, ticket: widget.ticket);

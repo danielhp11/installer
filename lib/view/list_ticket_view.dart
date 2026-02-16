@@ -44,32 +44,54 @@ class _ListTicketViewState extends State<ListTicketView> {
 
     return Scaffold(
       appBar: AppBar(
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).primaryColor,
+                Theme.of(context).primaryColor.withOpacity(0.8),
+              ],
+            ),
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.exit_to_app),
+          icon: const Icon(Icons.logout_rounded),
           onPressed: () => _showConfirmationDialog(context),
+          tooltip: 'Cerrar Sesión',
         ),
         title: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-
-            Text('Tickets - $company'),
-            Text('[ $nameType ] - $nameUser',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontFamily: 'Raleway',
-                )
+            Text(
+              'Tickets - $company',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              '[$nameType] $nameUser',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.5,
+              ),
             ),
           ],
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.business_center_outlined),
+            icon: const Icon(Icons.business_rounded),
             tooltip: 'Cambiar Empresa',
             onPressed: () => _showBranchSelectionDialog(context),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => viewModel.loadTickets(),
+            tooltip: 'Actualizar',
           ),
         ],
       ),
@@ -79,13 +101,12 @@ class _ListTicketViewState extends State<ListTicketView> {
           Expanded(child: _buildBody(viewModel)),
         ],
       ),
-      floatingActionButton: Padding(
-          padding: const EdgeInsetsGeometry.only(right: 16, bottom: 35),
-        child: FloatingActionButton(
-          onPressed: () => showFuelFormBottomSheet(context, null),
-          child: const Icon(Icons.add),
-        ),
-      )
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showFuelFormBottomSheet(context, null),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Nueva Revisión'),
+        elevation: 6,
+      ),
     );
   }
 
@@ -108,14 +129,6 @@ class _ListTicketViewState extends State<ListTicketView> {
                 icon: Icons.directions_bus,
                 isSelected: currentBranch == 'BUSMEN',
                 onTap: () => _selectBranch(context, 'BUSMEN'),
-              ),
-              const SizedBox(height: 12),
-              _branchOption(
-                context,
-                title: 'TEMSA',
-                icon: Icons.local_shipping,
-                isSelected: currentBranch == 'TEMSA',
-                onTap: () => _selectBranch(context, 'TEMSA'),
               ),
             ],
           ),
@@ -196,23 +209,35 @@ class _ListTicketViewState extends State<ListTicketView> {
   }
 
   Widget _buildFilters(ListTicketViewmodel vm) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SearchBar(
             hintText: 'Buscar por unidad...',
-            leading: const Icon(Icons.search),
+            leading: Icon(Icons.search_rounded, color: Theme.of(context).primaryColor),
             onChanged: (value) => vm.setSearchQuery(value),
             elevation: WidgetStateProperty.all(0),
-            backgroundColor: WidgetStateProperty.all(Colors.grey.withOpacity(0.1)),
+            backgroundColor: WidgetStateProperty.all(Colors.grey.withOpacity(0.08)),
             shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             ),
+            padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
           ),
-          const SizedBox(height: 12),
-
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -220,9 +245,10 @@ class _ListTicketViewState extends State<ListTicketView> {
                   controller: vm.controllerDateStart,
                   readOnly: true,
                   onTap: () => _pickDate(vm: vm),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Fecha inicio",
-                    suffixIcon: Icon(Icons.calendar_month),
+                    labelStyle: TextStyle(color: Theme.of(context).primaryColor),
+                    suffixIcon: Icon(Icons.calendar_today_rounded, color: Theme.of(context).primaryColor),
                   ),
                 ),
               ),
@@ -232,50 +258,60 @@ class _ListTicketViewState extends State<ListTicketView> {
                   controller: vm.controllerDateEnd,
                   readOnly: true,
                   onTap: () => _pickDate(isStartDate: false, vm: vm),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Fecha final",
-                    suffixIcon: Icon(Icons.calendar_month),
+                    labelStyle: TextStyle(color: Theme.of(context).primaryColor),
+                    suffixIcon: Icon(Icons.event_rounded, color: Theme.of(context).primaryColor),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          const Text(
+            'Estado',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _SortChip(
                   label: 'Todos Activos',
-                  icon: Icons.check_circle_outline,
+                  icon: Icons.check_circle_outline_rounded,
                   isSelected: vm.selectedFilters.contains(TicketFilterOption.active),
                   onSelected: () => vm.toggleFilterOption(TicketFilterOption.active),
                 ),
                 const SizedBox(width: 8),
                 _SortChip(
                   label: 'Abierto',
-                  icon: Icons.lock_open,
+                  icon: Icons.lock_open_rounded,
                   isSelected: vm.selectedFilters.contains(TicketFilterOption.open),
                   onSelected: () => vm.toggleFilterOption(TicketFilterOption.open),
                 ),
                 const SizedBox(width: 8),
                 _SortChip(
                   label: 'Proceso',
-                  icon: Icons.pending_actions,
+                  icon: Icons.pending_actions_rounded,
                   isSelected: vm.selectedFilters.contains(TicketFilterOption.process),
                   onSelected: () => vm.toggleFilterOption(TicketFilterOption.process),
                 ),
                 const SizedBox(width: 8),
                 _SortChip(
                   label: 'P. Validación',
-                  icon: Icons.rule,
+                  icon: Icons.rule_rounded,
                   isSelected: vm.selectedFilters.contains(TicketFilterOption.pending),
                   onSelected: () => vm.toggleFilterOption(TicketFilterOption.pending),
                 ),
                 const SizedBox(width: 8),
                 _SortChip(
                   label: 'Cerrado',
-                  icon: Icons.lock,
+                  icon: Icons.lock_rounded,
                   isSelected: vm.selectedFilters.contains(TicketFilterOption.closed),
                   onSelected: () => vm.toggleFilterOption(TicketFilterOption.closed),
                 ),
@@ -289,21 +325,28 @@ class _ListTicketViewState extends State<ListTicketView> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          const Text(
+            'Ordenar',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
-              const Text('Ordenar por fecha: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-              const SizedBox(width: 8),
               _SortChip(
-                label: 'Recientes',
-                icon: Icons.arrow_downward,
+                label: 'Más Recientes',
+                icon: Icons.arrow_downward_rounded,
                 isSelected: vm.sortOption == TicketSortOption.dateDesc,
                 onSelected: () => vm.setSortOption(TicketSortOption.dateDesc),
               ),
               const SizedBox(width: 8),
               _SortChip(
-                label: 'Antiguos',
-                icon: Icons.arrow_upward,
+                label: 'Más Antiguos',
+                icon: Icons.arrow_upward_rounded,
                 isSelected: vm.sortOption == TicketSortOption.dateAsc,
                 onSelected: () => vm.setSortOption(TicketSortOption.dateAsc),
               ),
