@@ -1,4 +1,6 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:instaladores_new/widget/card_widget.dart';
@@ -23,6 +25,7 @@ class CustomGoogleMap extends StatefulWidget {
 
 class _CustomGoogleMapState extends State<CustomGoogleMap> {
   GoogleMapController? _mapController;
+  BitmapDescriptor? _customIcon;
 
   String nameUnit = "Cargando ...";
   double latUnit = 20.543296;
@@ -34,6 +37,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
   @override
   void initState() {
     super.initState();
+    _loadCustomMarker();
 
     Future.microtask(() async {
 
@@ -64,6 +68,29 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     });
   }
 
+  Future<Uint8List> getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+  }
+
+  Future<void> _loadCustomMarker() async {
+    try {
+      // Cargamos el icono con un tamaño controlado (ej. 100px) para evitar errores de memoria o renderizado
+      final Uint8List markerIcon = await getBytesFromAsset('assets/images/icons/bus_icon.png', 100);
+      
+      if (mounted) {
+        setState(() {
+          _customIcon = BitmapDescriptor.fromBytes(markerIcon);
+        });
+      }
+    } catch (e) {
+      debugPrint("Error cargando el marcador personalizado: $e");
+      // En caso de error, el marcador usará el icono por defecto automáticamente
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ListTicketViewmodel viewModel = context.watch<ListTicketViewmodel>();
@@ -75,7 +102,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: TextButton(
+                child: OutlinedButton(
                   onPressed: () {
                     print("Text button pressed");
                   },
@@ -90,8 +117,8 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                   },
                   icon: Image.asset(
                     'assets/images/icons/motor.png',
-                    width: 24,
-                    height: 24,
+                    width: 44,
+                    height: 44,
                   ),
                 )
 
@@ -114,6 +141,8 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                   Marker(
                     markerId: const MarkerId("main_marker"),
                     position: LatLng(latUnit, longUnit),
+                    // Usamos _customIcon si ya cargó, de lo contrario el default
+                    icon: _customIcon ?? BitmapDescriptor.defaultMarker,
                   ),
                 },
                 myLocationEnabled: true,
