@@ -659,9 +659,6 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       if (!formKeyStartJob.currentState!.validate()) return;
 
-
-
-
       if( evidencePhotos.length < 2 ) {
         AnimatedResultDialog.showError(
             context,
