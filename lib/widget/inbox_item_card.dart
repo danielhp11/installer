@@ -150,8 +150,9 @@ class InboxItemCard extends StatelessWidget {
                     _actionIcon(
                       icon: Icons.construction,
                       color: _getBadgeColor(),
-                      visible: !UserSession().isMaster &&
-                          item.status == statusOpen,
+                      visible: true,
+                      // visible: !UserSession().isMaster &&
+                      //    item.status == statusOpen,
                       onTap: () =>
                           showStarJobFormBottomSheet(context, item),
                     ),
@@ -159,7 +160,7 @@ class InboxItemCard extends StatelessWidget {
                       icon: Icons.task_alt,
                       color: _getBadgeColor(),
                       visible: !UserSession().isMaster &&
-                          item.status == statusProcess,
+                          item.status == statusClosed && item.status == statusCancel,
                       onTap: () =>
                           showCloseJobFormBottomSheet(context, item),
                     ),

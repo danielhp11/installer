@@ -101,14 +101,14 @@ class _EvidenceGridState extends State<EvidenceGrid> {
                 _pickImage(ImageSource.camera);
               },
             ),
-            ListTile(
+            /*ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.green),
               title: const Text('Galería'),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
               },
-            ),
+            ),*/
           ],
         ),
       ),

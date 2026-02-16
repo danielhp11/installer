@@ -313,6 +313,44 @@ class ListTicketViewmodel extends ChangeNotifier {
     urlImgValidate = null;
     notifyListeners();
   }
+
+
+  Future<Map<String, dynamic>> getStatusDevice({required int idDevice}) async{
+    RequestServ ser = RequestServ.instance;
+    try{
+      final resp = await ser.fetchStatusDeviceById(deviceId: idDevice);
+      return resp as Map<String, dynamic>;
+    }catch(e){
+      debugPrint("[ ERR ] GET STATUS DEVICE: ${e.toString()}");
+    }
+
+    return {
+      "name": "error",
+    };
+
+  }
+
+  Future<Map<String, dynamic>> getPositionDevice({required int idDevice}) async {
+    RequestServ ser = RequestServ.instance;
+
+    try {
+      final resp = await ser.fetchByUnit(deviceId: idDevice);
+
+      return resp as Map<String, dynamic>;
+
+    } catch (e) {
+      debugPrint("[ ERR ] GET POSITION DEVICE: ${e.toString()}");
+    }
+
+    return {
+      "error": "error",
+      "valid": false,
+      "latitude": 0.0,
+      "longitude": 0.0,
+      "attributes": {"ignition": false, "battery": 0.0}
+    };
+  }
+
   // endregion BTN SHEET START JOB TICKET VIEW
 
   // region BTN SHEET CLOSE JOB TICKET VIEW
@@ -630,14 +668,14 @@ class ListTicketViewmodel extends ChangeNotifier {
         return;
       }
 
-      if( urlImgValidate == null ) {
+      /*if( urlImgValidate == null ) {
         AnimatedResultDialog.showError(
             context,
             title: "No hay validacion",
             message: "Por favor valida que los coponentes funcionen correctamente"
         );
         return;
-      }
+      }*/
 
 
       try{

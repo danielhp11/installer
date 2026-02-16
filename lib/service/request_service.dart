@@ -192,4 +192,72 @@ class RequestServ {
   }
   // region Installer COOKIE
 
+
+  // region device position
+  Future<Map<String, dynamic>?> fetchByUnit({
+    required int deviceId,
+  }) async {
+    try {
+      final url = Uri.parse("https://rastreobusmen.geovoy.com/api/positions");
+
+      final response = await http.get(
+        url,
+        // headers: {"Cookie": cookie},
+        headers: {"Authorization": basicAuth},
+      );
+
+      if (response.statusCode != 200) {
+        print("HTTP error: ${response.statusCode}");
+        return null;
+      }
+
+      final List<dynamic> jsonList = jsonDecode(response.body);
+
+      final pos = jsonList.cast<Map<String, dynamic>>().firstWhere(
+            (p) => p["deviceId"] == deviceId,
+        orElse: () => {},
+      );
+
+      if (pos.isEmpty) {
+        print("No se encontró posición para deviceId $deviceId");
+        return null;
+      }
+
+      return pos;
+
+    } catch (e) {
+      print("Error fetchByUnit: $e");
+      return null;
+    }
+  }
+  // endregion device position
+
+  // region device status
+  Future<dynamic> fetchStatusDeviceById({ required int deviceId }) async {
+    try {
+      final url = Uri.parse("https://rastreobusmen.geovoy.com/api/devices/$deviceId");
+
+      final response = await http.get(
+        url,
+        // headers: {"Cookie": cookie},
+        headers: {"Authorization": basicAuth},
+      );
+
+      if (response.statusCode != 200) {
+        print("HTTP error: ${response.statusCode}");
+        return null;
+      }
+
+      final jsonBody = jsonDecode(response.body);
+
+      return jsonBody;
+
+    } catch (e) {
+      print("Error fetchStatusForUnit: $e");
+      return null;
+    }
+  }
+
+  // endregion device status
+
 }

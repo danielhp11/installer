@@ -8,6 +8,7 @@ import '../../../viewModel/list_ticket_viewmodel.dart';
 import '../../../widget/card_widget.dart';
 import '../../../widget/evidence_grid.dart';
 import '../../../widget/header_widget.dart';
+import '../../../widget/maps_widget.dart';
 import '../../../widget/text_field_widget.dart';
 
 class StartJobTicket extends StatefulWidget {
@@ -29,7 +30,8 @@ class _StartJobTicket extends State<StartJobTicket> {
     Future.microtask(() {
       context.read<ListTicketViewmodel>().isLoadingStart = true;
       context.read<ListTicketViewmodel>().resetEvidenceStart();
-      context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId, widget.ticket.company!);
+      // context.read<ListTicketViewmodel>().getPositionDevice( idDevice: int.parse(widget.ticket.unitId.toString()) );
+      // context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId, widget.ticket.company!);
       context.read<ListTicketViewmodel>().isLoadingStart = false;
     });
   }
@@ -87,7 +89,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                   const SizedBox(height: 10),
                   textField(viewModel.descriptionStartController, 'Descripcion', Icons.text_snippet_outlined),
                   const SizedBox(height: 10),
-                  card(
+                  /*card(
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -170,7 +172,53 @@ class _StartJobTicket extends State<StartJobTicket> {
                           ),
                         ],
                     )
+                  ),*/
+                  card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start, // 👈 important
+                      children: [
+                        infoText(
+                          text: "Validacion de corriente",
+                          textAlign: TextAlign.start,
+                          styles: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        infoText(
+                            text: "Validacion de tierra",
+                            textAlign:  TextAlign.start,
+                            styles: TextStyle(
+                              fontSize: 14,
+                              // color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
+                              fontWeight: FontWeight.w500,
+                            )
+                        ),
+
+                        const SizedBox(height: 10),
+                        infoText(
+                            text: "Validacion de ignicion",
+                            textAlign:  TextAlign.start,
+                            styles: TextStyle(
+                              fontSize: 14,
+                              // color: lenEvidence > 0? Colors.green.shade600: Colors.red.shade600,
+                              fontWeight: FontWeight.w500,
+                            )
+                        ),
+
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 500,
+                    child: CustomGoogleMap(
+                      deviceId: widget.ticket.unitId,
+                    ),
+                  ),
+
                   const SizedBox(height: 10),
                   infoText(
                       text: lenEvidencteText,
