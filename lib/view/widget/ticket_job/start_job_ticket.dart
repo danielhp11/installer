@@ -27,11 +27,9 @@ class _StartJobTicket extends State<StartJobTicket> {
   void initState() {
     super.initState();
 
-    Future.microtask(() {
+    Future.microtask(() async {
       context.read<ListTicketViewmodel>().isLoadingStart = true;
       context.read<ListTicketViewmodel>().resetEvidenceStart();
-      // context.read<ListTicketViewmodel>().getPositionDevice( idDevice: int.parse(widget.ticket.unitId.toString()) );
-      // context.read<ListTicketViewmodel>().initSocket(widget.ticket.unitId, widget.ticket.company!);
       context.read<ListTicketViewmodel>().isLoadingStart = false;
     });
   }

@@ -10,6 +10,7 @@ import '../../../widget/card_widget.dart';
 import '../../../widget/evidence_grid.dart';
 import '../../../widget/header_widget.dart';
 import '../../../widget/text_field_widget.dart';
+import '../../../widget/maps_widget.dart';
 
 class CloseJobTicket extends StatefulWidget {
 
