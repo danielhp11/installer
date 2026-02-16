@@ -270,6 +270,20 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                       )
                     ),
                     const SizedBox(height: 24),
+
+                    /// LOCATION SECTION
+
+                    SizedBox(
+                      height: 500,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CustomGoogleMap(
+                          deviceId: widget.ticket.unitId,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
                     
                     /// EVIDENCE SECTION
                     Container(
