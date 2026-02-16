@@ -213,7 +213,7 @@ class _StartJobTicket extends State<StartJobTicket> {
                         const SizedBox(height: 16),
                         
                         SizedBox(
-                          height: 300,
+                          height: 500,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: CustomGoogleMap(
