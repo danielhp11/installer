@@ -51,131 +51,219 @@ class InboxItemCard extends StatelessWidget {
 
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: isClosed
-              ? [_getBackgroundColor(), Colors.grey.shade100]
-              : [_getBackgroundColor(), Colors.white],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: _getBadgeColor().withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+        border: Border(
+          left: BorderSide(
+            color: _getBadgeColor(),
+            width: 5,
+          ),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {},
-          child: Padding(
-            padding: const EdgeInsets.all(18),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  _getBackgroundColor().withOpacity(0.3),
+                  Colors.white,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-                /// 🔹 HEADER
+                /// HEADER - Unit ID & Status
                 Row(
                   children: [
-                    Icon(
-                      Icons.directions_bus_rounded,
-                      size: 28,
-                      color: isClosed
-                          ? Colors.grey
-                          : Colors.blue.shade700,
-                    ),
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: Text(
-                        item.unitId,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: isClosed
-                              ? Colors.grey.shade700
-                              : Colors.black87,
-                        ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _getBadgeColor().withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.directions_bus_rounded,
+                        size: 24,
+                        color: _getBadgeColor(),
                       ),
                     ),
-
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.unitId,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isClosed ? Colors.grey.shade600 : Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Ticket #${item.id}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     _buildStatusChip(),
                   ],
                 ),
 
                 const SizedBox(height: 12),
+                Container(
+                  height: 1,
+                  color: Colors.grey.shade200,
+                ),
+                const SizedBox(height: 12),
 
-                /// 🔹 SUBINFO
-                Row(
+                /// INFO CHIPS
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    infoText(text: "Ticket #${item.id}"),
-                    const Spacer(),
-                    Icon(Icons.person, size: 14, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
+                    _infoChip(
+                      Icons.calendar_today_rounded,
+                      formatDateManual(item.create_at!),
+                    ),
+                    _infoChip(
+                      Icons.person_rounded,
                       item.technicianName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
-                      ),
+                    ),
+                    _infoChip(
+                      Icons.business_rounded,
+                      item.company ?? 'N/A',
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                if (item.description.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.description_rounded,
+                          size: 16,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.description,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    infoText(text: "Fecha creacion:\n${formatDateManual(item.create_at!)}"),
-                    const SizedBox(height: 6),
-                    infoText(text: "Empresa: ${item.company}"),
-                    const SizedBox(height: 6),
-                    infoText(text: "Descripción:\n${item.description}"),
-                    const SizedBox(height: 6),
-                    isCancel? infoText(text: "${item.history?.last.notes}"):SizedBox.shrink(),
-                  ],
-                ),
+                if (isCancel && item.history?.last.notes != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_rounded,
+                          size: 16,
+                          color: Colors.red.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.history!.last.notes ?? '',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.red.shade700,
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
-                ///  ACTIONS
+                const SizedBox(height: 12),
+
+                /// ACTIONS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    // Start job - only for ABIERTO status
                     _actionIcon(
-                      icon: Icons.construction,
-                      color: _getBadgeColor(),
-                      visible: true,
-                      // visible: !UserSession().isMaster &&
-                      //    item.status == statusOpen,
-                      onTap: () =>
-                          showStarJobFormBottomSheet(context, item),
+                      icon: Icons.play_circle_outline_rounded,
+                      color: Colors.green.shade700,
+                      visible: !UserSession().isMaster && item.status == statusOpen,
+                      onTap: () => showStarJobFormBottomSheet(context, item),
                     ),
+                    // Close job - only for PROCESO status
                     _actionIcon(
-                      icon: Icons.task_alt,
-                      color: _getBadgeColor(),
-                      visible: !UserSession().isMaster &&
-                          item.status == statusClosed && item.status == statusCancel,
-                      onTap: () =>
-                          showCloseJobFormBottomSheet(context, item),
+                      icon: Icons.task_alt_rounded,
+                      color: Colors.orange.shade700,
+                      visible: !UserSession().isMaster && item.status == statusProcess,
+                      onTap: () => showCloseJobFormBottomSheet(context, item),
                     ),
+                    // Edit - only for master and ABIERTO
                     _actionIcon(
-                      icon: Icons.edit,
-                      visible: UserSession().isMaster  &&
-                          item.status == statusOpen,
-                      onTap: () =>
-                          showFuelFormBottomSheet(context, item),
+                      icon: Icons.edit_rounded,
+                      visible: UserSession().isMaster && item.status == statusOpen,
+                      onTap: () => showFuelFormBottomSheet(context, item),
                     ),
+                    // Delete - only for master and ABIERTO
                     _actionIcon(
-                      icon: Icons.delete_forever,
+                      icon: Icons.delete_rounded,
                       color: Colors.redAccent,
-                      visible: UserSession().isMaster &&
-                          item.status == statusOpen,
+                      visible: UserSession().isMaster && item.status == statusOpen,
                       onTap: () => _showConfirmationDialog(
                         context,
                         (reason) => viewModel.deleteTicket(
@@ -191,6 +279,37 @@ class InboxItemCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _infoChip(IconData icon, String text) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 160),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey.shade600),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
       ),
     );
   }

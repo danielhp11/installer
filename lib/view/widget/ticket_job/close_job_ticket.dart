@@ -71,23 +71,113 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    header( context,"Cerrar ticket", (){
+                    header( context,"Cerrar Trabajo", (){
                       viewModel.disconnectSocket();
                       Navigator.pop(context);
                     } ),
-                    const SizedBox(height: 16),
-                    textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company!, readOnly: true ),
-                    const SizedBox(height: 16),
-                    textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
-                    const SizedBox(height: 16),
-                    textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true, ),
-                    const SizedBox(height: 16),
-                    textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
-                    const SizedBox(height: 16),
-                    card(
+                    const SizedBox(height: 20),
+                    
+                    /// INFO SECTION
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade200),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.info_outline_rounded,
+                                  color: Theme.of(context).primaryColor,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Información del Trabajo',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company!, readOnly: true ),
+                          const SizedBox(height: 12),
+                          textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
+                          const SizedBox(height: 12),
+                          textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true, ),
+                          const SizedBox(height: 12),
+                          textField(viewModel.descriptionCloseController, 'Descripcion', Icons.text_snippet_outlined),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    /// VALIDATION SECTION
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.blue.shade100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  color: Colors.blue.shade700,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Validación de Funciones',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
                           Row(
                             children: [
                               Expanded(
@@ -116,16 +206,20 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(
-                                child:  infoText(
-                                    text: "Lectoras",
-                                    styles: const TextStyle(
-                                      fontSize: 17,
-                                    )
+                              Flexible(
+                                flex: 2,
+                                child:  Text(
+                                    "Lectoras",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Expanded(
+                              Flexible(
+                                flex: 3,
                                 child: TextFormField(
                                   controller: viewModel.lectorasController,
                                   readOnly: true,
@@ -133,6 +227,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                                   decoration: const InputDecoration(
                                     labelText: "Estado",
                                     border: OutlineInputBorder(),
+                                    isDense: true,
                                   ),
                                 ),
                               )
@@ -142,17 +237,21 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(
-                                  child: infoText(
-                                      text: "Botón de pánico",
-                                      styles: const TextStyle(
-                                        fontSize: 17,
-                                      )
+                              Flexible(
+                                  flex: 2,
+                                  child: Text(
+                                      "Botón de pánico",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                   )
                               ),
 
                               const SizedBox(width: 10),
-                              Expanded(
+                              Flexible(
+                                flex: 3,
                                 child: TextFormField(
                                   controller: viewModel.panicoController,
                                   readOnly: true,
@@ -160,6 +259,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                                   decoration: const InputDecoration(
                                     labelText: "Estado",
                                     border: OutlineInputBorder(),
+                                    isDense: true,
                                   ),
                                 ),
                               )
@@ -168,30 +268,82 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                         ],
                       )
                     ),
-                    const SizedBox(height: 10),
-                    infoText(
-                        text: lenEvidencteText,
-                        styles: TextStyle(
-                          fontSize: 14,
-                          color: viewModel.evidenceClosePhotos.length > 0? Colors.green.shade600: Colors.red.shade600,
-                          fontWeight: FontWeight.w500,
-                        )
+                    const SizedBox(height: 24),
+                    
+                    /// EVIDENCE SECTION
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.orange.shade100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.orange.shade700,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'Evidencia Después de Terminar',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          infoText(
+                              text: lenEvidencteText,
+                              styles: TextStyle(
+                                fontSize: 14,
+                                color: viewModel.evidenceClosePhotos.length > 0? Colors.green.shade600: Colors.red.shade600,
+                                fontWeight: FontWeight.w500,
+                              )
+                          ),
+                          const SizedBox(height: 12),
+                          EvidenceGrid(
+                            images: viewModel.evidenceClosePhotos,
+                            onImagesChanged: (images) {
+                              setState(() {
+                                viewModel.evidenceClosePhotos = images;
+                              });
+                            },
+                            onImageDelete: (_) {
+                              setState(() {
+                                viewModel.urlImgValidate = null;
+                                viewModel.isValidateComponent = false;
+                              });
+                            },
+                            maxImages: 6,
+                          ),
+                        ],
+                      ),
                     ),
-                    EvidenceGrid(
-                      images: viewModel.evidenceClosePhotos,
-                      onImagesChanged: (images) {
-                        setState(() {
-                          viewModel.evidenceClosePhotos = images;
-                        });
-                      },
-                      onImageDelete: (_) {
-                        setState(() {
-                          viewModel.urlImgValidate = null;
-                          viewModel.isValidateComponent = false;
-                        });
-                      },
-                      maxImages: 6,
-                    ),
+                    const SizedBox(height: 24),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {

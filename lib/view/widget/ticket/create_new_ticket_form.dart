@@ -107,19 +107,61 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                 textTitle,
                 () => Navigator.pop(context)
               ),
-              const SizedBox(height: 16),
-              card(
+              const SizedBox(height: 20),
+              
+              /// BASIC INFO SECTION
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.info_outline_rounded,
+                            color: Theme.of(context).primaryColor,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Información de la Revisión',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     _branchField(viewModel),
                     const SizedBox(height: 16),
                     UserSession().isMaster ?
                     _installerField(viewModel):
                     textFieldOnlyRead(
-                        label: 'Instalador',
-                        icon: Icons.person_search_outlined,
-                        value: UserSession().nameUser,
-                        readOnly: true,
+                      label: 'Instalador',
+                      icon: Icons.person_search_outlined,
+                      value: UserSession().nameUser,
+                      readOnly: true,
                     ),
                     const SizedBox(height: 16),
                     _unitField(viewModel),
@@ -127,9 +169,56 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                     textField(_modelController, 'Modelo de unidad', Icons.directions_bus_filled_outlined),
                     const SizedBox(height: 16),
                     textField(viewModel.descriptionController, 'Comentarios de revisión', Icons.text_snippet_outlined),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              /// EVIDENCE BEFORE SECTION
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blue.shade100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.camera_alt_rounded,
+                            color: Colors.blue.shade700,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Evidencia Antes',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
-                    const Text("Evidencia Antes", style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
                     EvidenceGrid(
                       images: _evidenceBefore,
                       onImagesChanged: (newImages) {
@@ -139,8 +228,56 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                       },
                       maxImages: 6,
                     ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              /// EVIDENCE AFTER SECTION
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.green.shade100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.photo_camera_rounded,
+                            color: Colors.green.shade700,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Evidencia Después',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
-                    const Text("Evidencia Después", style: TextStyle(fontWeight: FontWeight.bold)),
                     EvidenceGrid(
                       images: _evidenceAfter,
                       onImagesChanged: (newImages) {
@@ -243,18 +380,6 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                   await vm.loadExternalUnits('BUSMEN');
                   setState(() {
                     vm.companyController.text = 'BUSMEN';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.local_shipping),
-                title: const Text('TEMSA'),
-                trailing: vm.companyController.text == 'TEMSA' ? const Icon(Icons.check_circle, color: Colors.green) : null,
-                onTap: () async {
-                  await vm.loadExternalUnits('TEMSA');
-                  setState(() {
-                    vm.companyController.text = 'TEMSA';
                   });
                   Navigator.pop(context);
                 },
