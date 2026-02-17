@@ -249,9 +249,14 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     if (unit != null) {
       unitController.text = unit;
+      // Iniciar socket al seleccionar unidad
+      if (selectedUnitId != null) {
+        initSocket(selectedUnitId.toString(), company);
+      }
     } else {
       unitController.clear();
       selectedUnitId = null;
+      disconnectSocket();
     }
     notifyListeners();
   }
@@ -480,7 +485,7 @@ class ListTicketViewmodel extends ChangeNotifier {
 // endregion TICKET VIEW
 
   // region BTN SHEET NEW TICKET VIEW
-    Future<void> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket}) async{
+    Future<ApiResTicket?> createTicket({required BuildContext context, bool isUpdate = false, int? idTicket, bool shouldPop = true}) async{
 
       if (!formKey.currentState!.validate()) {
         AnimatedResultDialog.showError(
@@ -488,7 +493,7 @@ class ListTicketViewmodel extends ChangeNotifier {
             title: "Campos incompletos",
             message: "Es necesario agregar una descripciòn"
         );
-        return;
+        return null;
       }
 
       if (installerController.text.isEmpty && installerId == 0 ) {
@@ -497,7 +502,7 @@ class ListTicketViewmodel extends ChangeNotifier {
             title: "Campos incompletos",
             message: "Es necesario agregar un instalador"
         );
-        return;
+        return null;
       }
 
       if (unitController.text.isEmpty) {
@@ -506,7 +511,7 @@ class ListTicketViewmodel extends ChangeNotifier {
             title: "Campos incompletos",
             message: "Es necesario agregar una unidad"
         );
-        return;
+        return null;
       }
 
       final serv = RequestServ.instance;
@@ -553,18 +558,56 @@ class ListTicketViewmodel extends ChangeNotifier {
           fromJson: (json) => ApiResTicket.fromJson(json),
         );
 
-        if(ticket == null) return;
+        if(ticket == null) return null;
 
-        loadTickets();
+        if (shouldPop) {
+          loadTickets();
+          if (context.mounted) Navigator.pop(context);
+          _isLoading = false;
+          resetForm();
+          notifyListeners();
+        }
 
-        if (context.mounted) Navigator.pop(context);
-        _isLoading = false;
-        resetForm();
-        notifyListeners();
+        return ticket;
 
       }catch(e){
         debugPrint("[ ERROR ] CREATE TICKET => ${e.toString()}");
+        return null;
       }
+    }
+
+    /// METODOLOGÍA COMBINADA SOLICITADA
+    Future<void> createTicketCombined({required BuildContext context, bool isUpdate = false, int? idTicket}) async {
+      _isLoading = true;
+      notifyListeners();
+
+      // 1. Primero se crea el nuevo ticket como ya esta
+      ApiResTicket? ticket = await createTicket(context: context, isUpdate: isUpdate, idTicket: idTicket, shouldPop: false);
+      
+      if(ticket == null) {
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      // 2. Si tiene imagenes en el arreglo de "evidencia antes" llamar metodologia que se tiene en @start_job_ticket.dart
+      if (evidencePhotos.isNotEmpty) {
+        descriptionStartController.text = descriptionController.text;
+        await sendEvidence(context: context, idTicket: ticket.id, ticket: ticket, shouldPop: false);
+      }
+
+      // 3. Lo mismo para el de cierre, llama la metodologia de @close_job_ticket.dart
+      if (evidenceClosePhotos.isNotEmpty) {
+        descriptionCloseController.text = descriptionController.text;
+        await sendEvidenceClose(context: context, idTicket: ticket.id, ticket: ticket, shouldPop: false);
+      }
+
+      loadTickets();
+      if (context.mounted) Navigator.pop(context);
+      _isLoading = false;
+      resetForm();
+      disconnectSocket();
+      notifyListeners();
     }
   // endregion BTN SHEET NEW TICKET VIEW
 
@@ -677,31 +720,23 @@ class ListTicketViewmodel extends ChangeNotifier {
   // endregion BTN DELETE TICKET VIEW
 
   // region BTN SHEET START JOB TICKET VIEW
-    Future<void> sendEvidence({required BuildContext context, int? idTicket, ApiResTicket? ticket}) async{
+    Future<void> sendEvidence({required BuildContext context, int? idTicket, ApiResTicket? ticket, bool shouldPop = true}) async{
 
-      if (!formKeyStartJob.currentState!.validate()) return;
+      if (shouldPop && !formKeyStartJob.currentState!.validate()) return;
 
       if( evidencePhotos.length < 2 ) {
-        AnimatedResultDialog.showError(
-            context,
-            title: "No hay evidencias",
-            message: "Por lo menos una foto es requerida"
-        );
+        if (shouldPop) {
+          AnimatedResultDialog.showError(
+              context,
+              title: "No hay evidencias",
+              message: "Por lo menos una foto es requerida"
+          );
+        }
         return;
       }
 
       // return;
       print("=> ${evidencePhotos.length}");
-
-      /*if( urlImgComponent == null ) {
-        AnimatedResultDialog.showError(
-            context,
-            title: "No hay validacion",
-            message: "Por favor valida que los coponentes funcionen correctamente"
-        );
-        return;
-      }*/
-
 
       try{
 
@@ -731,17 +766,19 @@ class ListTicketViewmodel extends ChangeNotifier {
 
         _triggerSync();
 
-        if (context.mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Guardado correctamente. Se sincronizará en segundo plano.')),
-          );
+        if (shouldPop) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Guardado correctamente. Se sincronizará en segundo plano.')),
+            );
+          }
+          
+          loadTickets();
+          _isLoading = false;
+          if (context.mounted) Navigator.pop(context); 
+          disconnectSocket();
+          notifyListeners();
         }
-        
-        loadTickets();
-        _isLoading = false;
-        if (context.mounted) Navigator.pop(context); 
-        disconnectSocket();
-        notifyListeners();
 
       }catch(e){
         debugPrint("[ ERROR ] START JOB ACTIVITY ${e.toString()}");
@@ -751,44 +788,52 @@ class ListTicketViewmodel extends ChangeNotifier {
   // endregion BTN SHEET START JOB TICKET VIEW
 
   // region BTN SHEET CLOSE JOB TICKET VIEW
-  Future<void> sendEvidenceClose({required BuildContext context, int? idTicket, ApiResTicket? ticket}) async{
+  Future<void> sendEvidenceClose({required BuildContext context, int? idTicket, ApiResTicket? ticket, bool shouldPop = true}) async{
 
-    if (!formKeyCloseJob.currentState!.validate()) return;
+    if (shouldPop && !formKeyCloseJob.currentState!.validate()) return;
 
     if(!isEvidenceUnitUserClose){
-      AnimatedResultDialog.showError(
-          context,
-          title: "No hay evidencias",
-          message: "Por lo menos una foto es requerida del mapa y la undiad"
-      );
+      if (shouldPop) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay evidencias",
+            message: "Por lo menos una foto es requerida del mapa y la undiad"
+        );
+      }
       return;
     }
     if(!isValidateComponent){
-      AnimatedResultDialog.showError(
-          context,
-          title: "No hay evidencias",
-          message: "Asegúrate de que los componentes funcionen correctamente."
-      );
+      if (shouldPop) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay evidencias",
+            message: "Asegúrate de que los componentes funcionen correctamente."
+        );
+      }
       return;
     }
 
     if( evidenceClosePhotos.length < 2 ) {
-      AnimatedResultDialog.showError(
-          context,
-          title: "No hay evidencias",
-          message: "Por lo menos una foto es requerida"
-      );
+      if (shouldPop) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay evidencias",
+            message: "Por lo menos una foto es requerida"
+        );
+      }
       return;
     }
 
     if( urlImgComponent == null ) {
-      AnimatedResultDialog.showError(
-          context,
-          title: "No hay validacion",
-          message: "Por favor valida que los coponentes funcionen correctamente"
-        );
-        return;
+      if (shouldPop) {
+        AnimatedResultDialog.showError(
+            context,
+            title: "No hay validacion",
+            message: "Por favor valida que los coponentes funcionen correctamente"
+          );
       }
+      return;
+    }
 
     // return; // Se asume que esto estaba para pruebas, pero lo dejo por si acaso o lo comento si estorba
     try{
@@ -819,17 +864,19 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       _triggerSync();
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Guardado correctamente. Se sincronizará en segundo plano.')),
-        );
-      }
+      if (shouldPop) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Guardado correctamente. Se sincronizará en segundo plano.')),
+          );
+        }
 
-      loadTickets();
-      _isLoading = false;
-      if (context.mounted) Navigator.pop(context);
-      disconnectSocket();
-      notifyListeners();
+        loadTickets();
+        _isLoading = false;
+        if (context.mounted) Navigator.pop(context);
+        disconnectSocket();
+        notifyListeners();
+      }
     }catch(e){
       debugPrint("[ ERROR ] CLOSE JOB ACTIVITY ${e.toString()}");
     }
