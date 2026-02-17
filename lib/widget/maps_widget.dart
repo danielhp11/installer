@@ -2,8 +2,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:instaladores_new/service/request_service.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:instaladores_new/widget/card_widget.dart';
+import 'package:instaladores_new/widget/alert_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -130,6 +132,84 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     return DateFormat('dd/MM/yyyy HH:mm:ss').format(parsedDate);
   }
 
+  void _showMotorCommandsModal() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext ctx) {
+        return Wrap(
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.power_settings_new, color: Colors.red),
+              title: const Text('Apagado motor remoto'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                _validateSendCommand( isTurnOn: false );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.power_settings_new, color: Colors.green),
+              title: const Text('Encendido motor remoto'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                _validateSendCommand();
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.cancel_outlined),
+              title: const Text('Cancelar'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _validateSendCommand({bool isTurnOn = true}) async {
+    RequestServ ser = RequestServ.instance;
+    try{
+
+      final request = await ser.handlingRequest(
+        urlFull: true,
+        urlParam: "https://soporte.geovoy.com/api/commands/send",
+        method: "POST",
+        params: {
+          "id": isTurnOn? 28: 29,             // 28 para Encender, 29 para Apagar
+          "deviceId": widget.deviceId,
+          "type": "custom",
+          "attributes": {
+            "data": isTurnOn? "setdigout 0":"setdigout 1" // "setdigout 1" para Apagar, "setdigout 0" para Encender
+          }
+        }
+      );
+
+      String text = isTurnOn? "Encendido":"Apagado";
+
+      if (request != null) {
+        AnimatedResultDialog.showSuccess(
+          context,
+          title: "Éxito",
+          message: "Comando de $text enviado correctamente",
+        );
+      } else {
+        AnimatedResultDialog.showError(
+          context,
+          title: "Error",
+          message: "No se pudo enviar el comando de $text",
+        );
+      }
+
+    }catch(e){
+      AnimatedResultDialog.showSuccess(
+        context,
+        title: "Error",
+        message: "Se presentó un error con los datos o el servidor. Si el problema continúa, comunícate con sistemas.",
+      );
+    }
+
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ListTicketViewmodel>();
@@ -208,16 +288,15 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                 )
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 child: IconButton(
-                  onPressed: () async {
-                    await viewModel.checkProximity(latUnit, longUnit);
-                    _updateCameraBounds();
+                  onPressed: () {
+                    _showMotorCommandsModal();
                   },
                   icon: Image.asset(
                     'assets/images/icons/motor.png',
-                    width: 44,
-                    height: 44,
+                    width: 35,
+                    height: 35,
                   ),
                 )
               ),

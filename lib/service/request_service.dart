@@ -29,6 +29,7 @@ class RequestServ {
   }) async {
     try {
       final base = baseUrlNor;
+
       String fullUrl = urlFull ? urlParam : base + urlParam;
 
       http.Response response;
