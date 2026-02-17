@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../service/response_service.dart';
 import '../../../service/user_session_service.dart';
 import '../../../viewModel/list_ticket_viewmodel.dart';
-import '../../../widget/card_widget.dart';
 import '../../../widget/header_widget.dart';
+import '../../../widget/maps_widget.dart';
 import '../../../widget/selector_field.dart';
 import '../../../widget/text_field_widget.dart';
 import '../../../widget/evidence_grid.dart';
@@ -18,6 +18,7 @@ class CreateNewTicketForm extends StatefulWidget {
 
   @override
   State<CreateNewTicketForm> createState() => _CreateNewTicketForm();
+
 }
 
 class _CreateNewTicketForm extends State<CreateNewTicketForm> {
@@ -26,6 +27,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
   final TextEditingController _modelController = TextEditingController();
   List<Map<String, String>> _evidenceBefore = [];
   List<Map<String, String>> _evidenceAfter = [];
+
 
   @override
   void initState() {
@@ -87,6 +89,8 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
     if (viewModel.isLoadNewUpdate) return const Center(child: CircularProgressIndicator());
 
     String textTitle = isUpdate ? 'Actualizar revisión' : 'Revisión de unidad';
+
+    print("=> ${viewModel.selectedUnitId}");
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -172,6 +176,101 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 20),
+
+              /// VALIDATION SECTION
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blue.shade100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: Colors.blue.shade700,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Validación y Ubicación',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    Text(
+                      'Validación de corriente',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Text(
+                      'Validación de tierra',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Text(
+                      'Validación de ignición',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // work
+                    viewModel.selectedUnitId == null?
+                        const SizedBox()
+                        :SizedBox(
+                      height: 500,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CustomGoogleMap(
+                          deviceId: viewModel.selectedUnitId,
+                          isTicketClose: false,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               
               const SizedBox(height: 20),
               

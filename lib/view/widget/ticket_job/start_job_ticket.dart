@@ -309,7 +309,9 @@ class _StartJobTicket extends State<StartJobTicket> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
                   ElevatedButton(
                     onPressed: () {
                       viewModel.sendEvidence(context: context, idTicket: widget.ticket.id, ticket: widget.ticket);
