@@ -4,11 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:instaladores_new/widget/card_widget.dart';
-import 'package:instaladores_new/widget/text_field_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-
-import '../service/response_service.dart';
 
 class CustomGoogleMap extends StatefulWidget {
   final deviceId;
@@ -44,16 +41,16 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
 
     Future.microtask(() async {
       try {
-        final responseStatus = await context.read<ListTicketViewmodel>().getStatusDevice(
+        final viewModel = context.read<ListTicketViewmodel>();
+        final responseStatus = await viewModel.getStatusDevice(
             idDevice: int.parse(widget.deviceId.toString())
         );
 
-        final response = await context.read<ListTicketViewmodel>().getPositionDevice(
+        final response = await viewModel.getPositionDevice(
             idDevice: int.parse(widget.deviceId.toString())
         );
 
         if (mounted) {
-          //print("=> ${response['deviceTime']}");
           setState(() {
             nameUnit = responseStatus['name'] as String;
             latUnit = response['latitude'] as double;
@@ -63,15 +60,47 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
             date = parseDateDevice(response['deviceTime'] as String);
           });
 
-          // Mover la cámara a la nueva posición
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLng(LatLng(latUnit, longUnit)),
-          );
+          // 1. Obtenemos la proximidad y la ubicación del usuario
+          await viewModel.checkProximity(latUnit, longUnit);
+          
+          // 2. Ajustamos la cámara para ver ambos puntos
+          _updateCameraBounds();
         }
       } catch (e) {
         debugPrint("Error al obtener posición: $e");
       }
     });
+  }
+
+  /// Ajusta el zoom y centro del mapa para mostrar tanto la unidad como al usuario
+  void _updateCameraBounds() {
+    if (_mapController == null) return;
+    
+    final viewModel = context.read<ListTicketViewmodel>();
+    
+    if (viewModel.userLat != null && viewModel.userLon != null) {
+      // Calculamos los límites que contienen ambos puntos
+      LatLngBounds bounds = LatLngBounds(
+        southwest: LatLng(
+          latUnit < viewModel.userLat! ? latUnit : viewModel.userLat!,
+          longUnit < viewModel.userLon! ? longUnit : viewModel.userLon!,
+        ),
+        northeast: LatLng(
+          latUnit > viewModel.userLat! ? latUnit : viewModel.userLat!,
+          longUnit > viewModel.userLon! ? longUnit : viewModel.userLon!,
+        ),
+      );
+
+      // Animamos la cámara con un padding de 80 para que no queden pegados a las orillas
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngBounds(bounds, 80),
+      );
+    } else {
+      // Si no hay ubicación del usuario, solo centramos en la unidad
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLng(LatLng(latUnit, longUnit)),
+      );
+    }
   }
 
   Future<Uint8List> getBytesFromAsset(String path, int width) async {
@@ -84,7 +113,6 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
   Future<void> _loadCustomMarker() async {
     try {
       final Uint8List markerIcon = await getBytesFromAsset('assets/images/icons/bus_icon.png', 100);
-      
       if (mounted) {
         setState(() {
           _customIcon = BitmapDescriptor.fromBytes(markerIcon);
@@ -97,14 +125,52 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
 
   String parseDateDevice (String dateStr){
     DateTime parsedDate = DateTime.parse(dateStr).toLocal();
-
     return DateFormat('dd/MM/yyyy HH:mm:ss').format(parsedDate);
   }
 
   @override
   Widget build(BuildContext context) {
-
     final viewModel = context.watch<ListTicketViewmodel>();
+    final bool hasEvidence = viewModel.isEvidenceUnitUserClose || viewModel.isEvidenceUnitUserStart;
+
+    Set<Marker> markers = {
+      Marker(
+        markerId: const MarkerId("unit_marker"),
+        position: LatLng(latUnit, longUnit),
+        infoWindow: InfoWindow(
+          title: "Unidad: $nameUnit", 
+          snippet: "Distancia: ${viewModel.currentDistance.toStringAsFixed(2)}m"
+        ),
+        icon: _customIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      ),
+    };
+
+    if (viewModel.userLat != null && viewModel.userLon != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId("user_marker"),
+          position: LatLng(viewModel.userLat!, viewModel.userLon!),
+          infoWindow: const InfoWindow(title: "Tu ubicación"),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      );
+    }
+
+    Set<Polyline> polylines = {};
+    if (viewModel.userLat != null && viewModel.userLon != null) {
+      polylines.add(
+        Polyline(
+          polylineId: const PolylineId("distance_line"),
+          points: [
+            LatLng(latUnit, longUnit),
+            LatLng(viewModel.userLat!, viewModel.userLon!),
+          ],
+          color: Colors.blueAccent,
+          width: 3,
+          patterns: [PatternItem.dash(10), PatternItem.gap(10)],
+        ),
+      );
+    }
 
     return card(
       child: Column(
@@ -114,22 +180,38 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () async {
-                    await viewModel.takeScreenshotAndSaveMaps(widget.isTicketClose);
-                  },
+                  onPressed: viewModel.isNearUnit 
+                    ? () async {
+                        await viewModel.takeScreenshotAndSaveMaps(widget.isTicketClose);
+                      }
+                    : null,
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: viewModel.isNearUnit ? Colors.green.withOpacity(0.1) : Colors.grey.shade100,
                     side: BorderSide(
-                      color: viewModel.isEvidenceUnitUserClose || viewModel.isEvidenceUnitUserStart ? Colors.green :Colors.blue, // color del borde
+                      color: viewModel.isNearUnit 
+                        ? (hasEvidence ? Colors.green : Colors.blue) 
+                        : Colors.grey,
                       width: 2,
                     ),
                   ),
-                  child: const Text("Evidencia de posición de la unidad e instalador"),
+                  child: Text(
+                    viewModel.isNearUnit 
+                      ? "Capturar evidencia (Cerca)" 
+                      : "Fuera de rango (${viewModel.currentDistance.toStringAsFixed(1)}m)",
+                    style: TextStyle(
+                      color: viewModel.isNearUnit ? Colors.green.shade800 : Colors.grey.shade600,
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
                 )
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: IconButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    await viewModel.checkProximity(latUnit, longUnit);
+                    _updateCameraBounds();
+                  },
                   icon: Image.asset(
                     'assets/images/icons/motor.png',
                     width: 44,
@@ -143,33 +225,42 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: LatLng(latUnit, longUnit),
-                  zoom: widget.zoom,
-                ),
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                },
-                onCameraIdle: () {
-                  // Cada vez que la cámara deja de moverse (por animación o arrastre),
-                  // forzamos que se muestre el InfoWindow.
-                  _mapController?.showMarkerInfoWindow(const MarkerId("main_marker"));
-                },
-                markers: {
-                  Marker(
-                    markerId: const MarkerId("main_marker"),
-                    position: LatLng(latUnit, longUnit),
-                    infoWindow: InfoWindow(
-                      title: "Posición:",
-                      snippet: "$latUnit, $longUnit",
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: LatLng(latUnit, longUnit),
+                      zoom: widget.zoom,
                     ),
-                    icon: _customIcon ?? BitmapDescriptor.defaultMarker,
+                    onMapCreated: (controller) {
+                      _mapController = controller;
+                      // Intentamos ajustar al cargar el mapa
+                      _updateCameraBounds();
+                    },
+                    markers: markers,
+                    polylines: polylines,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                    zoomControlsEnabled: true,
                   ),
-                },
-                myLocationEnabled: true,
-                myLocationButtonEnabled: true,
-                zoomControlsEnabled: true,
+                  if (viewModel.userLat != null)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [const BoxShadow(color: Colors.black26, blurRadius: 4)],
+                        ),
+                        child: Text(
+                          "Distancia: ${viewModel.currentDistance.toStringAsFixed(2)} metros",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -181,10 +272,10 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: infoText(
-                      text: "Unidad: $nameUnit",
+                    child: Text(
+                      "Unidad: $nameUnit",
                       textAlign: TextAlign.start,
-                      styles: const TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
@@ -197,9 +288,9 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                       color: Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: infoText(
-                      text: status? "Encendida":"Apagada",
-                      styles: TextStyle(
+                    child: Text(
+                      status? "Encendida":"Apagada",
+                      style: TextStyle(
                         fontSize: 11,
                         color: status? Colors.green.shade700:Colors.red.shade700,
                         fontWeight: FontWeight.bold,
@@ -213,9 +304,9 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                 children: [
                   const Icon(Icons.access_time, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
-                  infoText(
-                    text: "Fecha: $date",
-                    styles: TextStyle(
+                  Text(
+                    "Fecha: $date",
+                    style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
                       fontWeight: FontWeight.w400,
@@ -224,9 +315,9 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
                   const Spacer(),
                   const Icon(Icons.battery_charging_full, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
-                  infoText(
-                    text: "$battery V",
-                    styles: TextStyle(
+                  Text(
+                    "$battery V",
+                    style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade700,
                       fontWeight: FontWeight.w400,

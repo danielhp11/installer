@@ -45,11 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Esta aplicación necesita acceso a la ubicación para validar que te encuentras cerca de la unidad al momento de iniciar o cerrar un trabajo.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Esta aplicación necesita acceso a la ubicación para validar que te encuentras cerca de la unidad.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Esta aplicación requiere acceso a la cámara para tomar fotos de las instalaciones.</string>
+	<string>Esta aplicación necesita acceso a la cámara para capturar evidencias del trabajo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Esta aplicación requiere acceso a la galería para seleccionar fotos de las instalaciones.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Esta aplicación requiere acceso al micrófono para grabar videos si es necesario.</string>
+	<string>Esta aplicación necesita acceso a la galería para seleccionar fotos de evidencia.</string>
 </dict>
 </plist>
