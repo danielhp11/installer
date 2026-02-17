@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:instaladores_new/service/offline_sync_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../service/request_service.dart';
 import '../service/response_service.dart';
@@ -313,6 +314,10 @@ class ListTicketViewmodel extends ChangeNotifier {
     isEvidenceUnitUserStart = false;
     urlImgComponent = null;
     urlImgMaps = null;
+    isNearUnit = false;
+    currentDistance = 0.0;
+    userLat = null;
+    userLon = null;
     notifyListeners();
   }
 
@@ -377,6 +382,10 @@ class ListTicketViewmodel extends ChangeNotifier {
     isEvidenceUnitUserClose = false;
     urlImgComponent = null;
     urlImgMaps = null;
+    isNearUnit = false;
+    currentDistance = 0.0;
+    userLat = null;
+    userLon = null;
     notifyListeners();
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
@@ -385,6 +394,10 @@ class ListTicketViewmodel extends ChangeNotifier {
   bool isValidateComponent = false;
   String? urlImgComponent;
   String? urlImgMaps;
+  bool isNearUnit = false;
+  double currentDistance = 0.0;
+  double? userLat;
+  double? userLon;
   // endregion SOCKET
 
   /*================ FUNCTIONS =================*/
@@ -678,7 +691,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       }
 
       // return;
-      //print("=> ${evidencePhotos.length}");
+      print("=> ${evidencePhotos.length}");
 
       /*if( urlImgComponent == null ) {
         AnimatedResultDialog.showError(
@@ -759,7 +772,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       return;
     }
 
-    if( evidenceClosePhotos.length < 3 ) {
+    if( evidenceClosePhotos.length < 2 ) {
       AnimatedResultDialog.showError(
           context,
           title: "No hay evidencias",
@@ -852,13 +865,13 @@ class ListTicketViewmodel extends ChangeNotifier {
 
       _isDownloadEnabled = true;
       notifyListeners();
-      //print("data socket => $pos");
-      //print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
+      print("data socket => $pos");
+      print("device id socket => $deviceId | search id => $idTicket => ${deviceId == int.parse(idTicket)}");
       bool btnPanicEventOne = pos["attributes"]["di2"] != "null" && pos["attributes"]["di2"] == "true" ;
       bool btnPanicEventTwo = pos["attributes"]["in2"] != "null" && pos["attributes"]["in2"] == "true" ;
-      //print("${pos["attributes"]["di2"]} $btnPanicEventOne");
-      //print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
-      //print("${btnPanicEventOne || btnPanicEventTwo}");
+      print("${pos["attributes"]["di2"]} $btnPanicEventOne");
+      print("${pos["attributes"]["in2"]} $btnPanicEventTwo");
+      print("${btnPanicEventOne || btnPanicEventTwo}");
 
       panicoController.text = btnPanicEventOne || btnPanicEventTwo? "Verificación correcta" :"Esperando evento...";
 
@@ -1020,7 +1033,78 @@ class ListTicketViewmodel extends ChangeNotifier {
     urlImgComponent = null;
     urlImgMaps = null;
     isValidateComponent = false;
+    isNearUnit = false;
+    currentDistance = 0.0;
+    userLat = null;
+    userLon = null;
     notifyListeners();
+  }
+
+  Future<void> checkProximity(double unitLat, double unitLon) async {
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('=> Location services are disabled.');
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('=> Location permissions are denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('=> Location permissions are permanently denied, we cannot request permissions.');
+        return;
+      }
+
+      debugPrint('=> hola');
+
+      // 1. Intentamos obtener la última posición conocida primero (es instantáneo)
+      Position? position = await Geolocator.getLastKnownPosition();
+      
+      try {
+        // 2. Intentamos obtener la posición actual con un TIMEOUT de 5 segundos
+        // Usamos Accuracy medium ya que es más rápido y suficiente para 20 metros
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 5),
+        );
+      } catch (e) {
+        debugPrint("=> ⚠️ Timeout o error obteniendo posición actual, usando última conocida si existe: $e");
+        // Si falló el actual, nos quedamos con la que obtuvimos en el paso 1
+      }
+
+      if (position != null) {
+        userLat = position.latitude;
+        userLon = position.longitude;
+        currentDistance = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          unitLat,
+          unitLon,
+        );
+      } else {
+        debugPrint("=> ❌ No se pudo obtener ninguna posición (actual ni conocida).");
+      }
+
+      debugPrint("------------------------------------------");
+      debugPrint("=> 📍 DISTANCIA A LA UNIDAD: ${currentDistance.toStringAsFixed(2)} metros");
+      debugPrint("------------------------------------------");
+
+      isNearUnit = currentDistance >= 10.0 && currentDistance <= 15.0;
+      // isNearUnit = currentDistance >= 8000.0 && currentDistance <= 15000.0;
+      notifyListeners();
+    } catch (e) {
+      debugPrint("=> ❌ Error crítico en checkProximity: $e");
+    }
   }
   // endregion UTILITIES
 
