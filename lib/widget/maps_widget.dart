@@ -45,10 +45,12 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
         final responseStatus = await viewModel.getStatusDevice(
             idDevice: int.parse(widget.deviceId.toString())
         );
+        print("responseStatus => $responseStatus");
 
         final response = await viewModel.getPositionDevice(
             idDevice: int.parse(widget.deviceId.toString())
         );
+        print("response => $response");
 
         if (mounted) {
           setState(() {
