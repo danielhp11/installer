@@ -59,7 +59,6 @@ class ListTicketViewmodel extends ChangeNotifier {
     super.dispose();
   }
 
-
   // region TICKET VIEW
   List<ApiResTicket> _tickets = [];
   TicketSortOption _sortOption = TicketSortOption.dateDesc;
@@ -374,6 +373,16 @@ class ListTicketViewmodel extends ChangeNotifier {
   bool isEvidenceUnitUserClose = false;
   bool isEvidenceUnitUserStart = false;
   bool isLoadingClose = false;
+
+  // evidence components
+  String? vcc = null;
+  String? gnc = null;
+  String? ignition = null;
+  String? gps = null;
+  String? buildUnit = null;
+  String? extraOne = null;
+  String? extraTwo = null;
+  // evidence components
 
 
   void resetEvidenceClose() {
@@ -1146,7 +1155,7 @@ class ListTicketViewmodel extends ChangeNotifier {
       debugPrint("=> 📍 DISTANCIA A LA UNIDAD: ${currentDistance.toStringAsFixed(2)} metros");
       debugPrint("------------------------------------------");
 
-      isNearUnit = currentDistance >= 10.0 && currentDistance <= 15.0;
+      isNearUnit = currentDistance <= 15.0;
       // isNearUnit = currentDistance >= 8000.0 && currentDistance <= 15000.0;
       notifyListeners();
     } catch (e) {

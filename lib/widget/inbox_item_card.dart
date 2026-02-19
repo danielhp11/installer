@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:instaladores_new/service/request_service.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
+import 'package:instaladores_new/widget/card_widget.dart';
 import 'package:instaladores_new/widget/text_field_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -275,6 +276,41 @@ class InboxItemCard extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 12),
+                //PROCESO = INICIO
+                // PENDIENTE_VALIDACION= FIN
+                item.evidences.length < 1?
+                const SizedBox():
+                card(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        textFieldOnlyRead(label: ".", icon: Icons.photo_camera, value: "EVIDENCIAS"),
+                        Row(
+                          children: [
+
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: _evidenceButton("INICIO"),
+                              ),
+                            ),
+
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 6),
+                                child: _evidenceButton("CIERRE"),
+                              ),
+                            ),
+
+                          ],
+                        )
+                      ]
+                    )
+                ),
+
+
               ],
             ),
           ),
@@ -337,12 +373,7 @@ class InboxItemCard extends StatelessWidget {
     );
   }
 
-  Widget _actionIcon({
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool visible,
-    Color color = Colors.blue,
-  }) {
+  Widget _actionIcon({ required IconData icon, required VoidCallback onTap, required bool visible, Color color = Colors.blue }) {
     if (!visible) return const SizedBox.shrink();
 
     return Padding(
@@ -359,6 +390,68 @@ class InboxItemCard extends StatelessWidget {
           child: Icon(icon, size: 18, color: color),
         ),
       ),
+    );
+  }
+
+  Widget _evidenceButton(String text) {
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+          colors: [
+          Color(0xFF4CA1AF), // Soft Teal
+      Color(0xFF2C3E50), // Deep Slate Blue
+      ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    stops: const [0.1, 0.9],
+    ),
+    boxShadow: [
+    BoxShadow(
+    color: Color(0xFF2C3E50).withOpacity(0.1),
+    blurRadius: 12,
+    offset: Offset(0, 4),
+    spreadRadius: -2,
+    ),
+    ],
+    ),
+    child: Material(
+    color: Colors.transparent,
+    child: InkWell(
+    onTap: () {},
+    borderRadius: BorderRadius.circular(12),
+    splashColor: Colors.white10,
+    highlightColor: Colors.white.withOpacity(0.05),
+    child: Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+    Icon(
+    Icons.add_a_photo_rounded,
+    color: Colors.white.withOpacity(0.9),
+    size: 16,
+    ),
+    SizedBox(width: 8),
+    Flexible(
+    child: Text(
+    text.toUpperCase(),
+    overflow: TextOverflow.ellipsis,
+    style: TextStyle(
+    color: Colors.white,
+    fontSize: 11,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.8,
+    fontFamily: 'Roboto',
+    ),
+    ),
+    ),
+    ],
+    ),
+    ),
+    ),
+    ),
     );
   }
 
@@ -400,10 +493,7 @@ class InboxItemCard extends StatelessWidget {
     }
   }
 
-  void _showConfirmationDialog(
-      BuildContext context,
-      Function(String) onConfirm,
-      ) {
+  void _showConfirmationDialog( BuildContext context, Function(String) onConfirm ) {
     final TextEditingController reasonController = TextEditingController();
 
     showDialog(

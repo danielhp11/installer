@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:instaladores_new/service/request_service.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
 import 'package:instaladores_new/view/list_ticket_view.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Gestor de Tickets',
       theme: AppTheme.lightTheme,
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: RequestServ.isDebug,
       home: UserSession().isLogin ? const ListTicketView() : const LoginView(),
     );
   }

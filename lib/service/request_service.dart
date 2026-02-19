@@ -3,13 +3,15 @@ import 'package:http/http.dart' as http;
 import 'response_service.dart';
 
 class RequestServ {
+  static bool isDebug = true;
 
-  static const String baseUrlNor = "https://instaladores.geovoy.com/api/";
+  static String baseUrlNor = isDebug? "http://172.16.2.147:8000/" : "https://instaladores.geovoy.com/api/";
 
   static const String urlAuthentication = "auth/login";
   static const String urlGetTickets = "tickets/";
   static const String urlInstaller = "users/?all=false";
   static const String urlSendStartJobEvidence = "tickets/upload";
+
 
   static const String _apiUser = 'apinstaladores@geovoy.com';
   static const String _apiPass = 'Instaladores*9';
@@ -20,21 +22,17 @@ class RequestServ {
   RequestServ._privateConstructor();
   static final RequestServ instance = RequestServ._privateConstructor();
 
-  Future<String?> handlingRequest({
-    required String urlParam,
-    Map<String, dynamic>? params,
-    String method = "GET",
-    bool asJson = false,
-    urlFull = false,
-  }) async {
+  Future<String?> handlingRequest({ required String urlParam, Map<String, dynamic>? params, String method = "GET", bool asJson = false, urlFull = false, }) async {
     try {
       final base = baseUrlNor;
 
       String fullUrl = urlFull ? urlParam : base + urlParam;
 
       http.Response response;
-      print("url => $fullUrl");
-      print("params => $params");
+      if (isDebug){
+        print("[ $method ] url => $fullUrl");
+        print("[ $method ] params => $params");
+      }
 
       if (method.toUpperCase() == 'GET') {
         // Si es GET, arma la URL con o sin parámetros
@@ -83,27 +81,28 @@ class RequestServ {
             throw UnsupportedError("HTTP method $method no soportado");
         }
       }
+      if( RequestServ.isDebug ){
+        print("[ $method ] response => ${response.body}");
+      }
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        if( RequestServ.isDebug ){
+          print("[ $method ] response.body => ${response.body}");
+        }
         return response.body;
       } else {
-        // print("HTTP error: ${response.statusCode}");
-        // print("response => ${response.headers}");
+        print("HTTP error: ${response.statusCode}");
+        print("response => ${response.headers}");
         return null;
       }
     } catch (e) {
-      // print("Error en handlingRequest: $e");
+      print("Error en handlingRequest: $e");
       return null;
     }
   }
 
   /// Función genérica para parsear JSON a objeto
-  Future<T?> handlingRequestParsed<T>(
-      {required String urlParam,
-        Map<String, dynamic>? params,
-        String method = "GET",
-        bool asJson = false,
-        required T Function(dynamic json) fromJson, urlFull = false} ) async {
+  Future<T?> handlingRequestParsed<T>( { required String urlParam, Map<String, dynamic>? params, String method = "GET", bool asJson = false, required T Function(dynamic json) fromJson, urlFull = false} ) async {
     final responseString = await handlingRequest(
         urlParam: urlParam, params: params, method: method, asJson: asJson, urlFull: urlFull);
 
@@ -111,9 +110,12 @@ class RequestServ {
 
     try {
       final jsonMap = jsonDecode(responseString);
+      if( RequestServ.isDebug ){
+        print("[ $method ] handlingRequestParsed | jsonMap => $jsonMap");
+      }
       return fromJson(jsonMap);
     } catch (e) {
-      // print("Error parseando JSON: $e");
+      print("Error parseando JSON: $e");
       return null;
     }
   }
@@ -132,11 +134,16 @@ class RequestServ {
       );
 
       if (response.statusCode != 200) {
-        // print("HTTP error: ${response.statusCode}");
+        print("HTTP error: ${response.statusCode}");
         return null;
       }
 
       final List<dynamic> jsonBody = jsonDecode(response.body);
+      if( isDebug ){
+        print("[ GET ] url => $url");
+        print("[ GET ] jsonBody => $jsonBody");
+        print("[ GET ] headers => Authorization:$basicAuth");
+      }
       
       if (isTemsa) {
         return jsonBody.map((item) => UnitTemsa.fromJson(item)).toList();
@@ -145,12 +152,10 @@ class RequestServ {
       }
 
     } catch (e) {
-      // print("Error fetchStatusForUnit: $e");
+      print("Error fetchStatusForUnit: $e");
       return null;
     }
   }
-
-
 // endregion Units
 
   // region Installer COOKIE
@@ -180,6 +185,14 @@ class RequestServ {
       if (rawCookie != null) {
         String? parsedCookie = rawCookie.split(";").first;
         // UserSession.token = parsedCookie;
+        if( isDebug ){
+          print("[ POST ] cookie url => $url");
+          print("[ POST ] cookie parms => ${
+              {"email": "desarrollo@geovoy.com",
+                "password": "DesGeo122"}
+              }");
+          print("[ POST ] cookie response => $rawCookie");
+        }
 
         return parsedCookie;
       }
@@ -195,9 +208,7 @@ class RequestServ {
 
 
   // region device position
-  Future<Map<String, dynamic>?> fetchByUnit({
-    required int deviceId,
-  }) async {
+  Future<Map<String, dynamic>?> fetchByUnit( { required int deviceId }) async {
     try {
       final url = Uri.parse("https://rastreobusmen.geovoy.com/api/positions");
 
@@ -213,6 +224,12 @@ class RequestServ {
       }
 
       final List<dynamic> jsonList = jsonDecode(response.body);
+
+      if( isDebug ){
+        print("[ GET ] url => $url");
+        print("[ GET ] jsonList => $jsonList");
+        print("[ GET ] headers => Authorization:$basicAuth");
+      }
 
       final pos = jsonList.cast<Map<String, dynamic>>().firstWhere(
             (p) => p["deviceId"] == deviceId,
@@ -250,6 +267,11 @@ class RequestServ {
       }
 
       final jsonBody = jsonDecode(response.body);
+      if( isDebug ){
+        print("[ GET ] url => $url");
+        print("[ GET ] jsonBody => $jsonBody");
+        print("[ GET ] headers => Authorization:$basicAuth");
+      }
 
       return jsonBody;
 
