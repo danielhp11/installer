@@ -6,6 +6,8 @@ import 'package:instaladores_new/widget/inbox_item_card.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:provider/provider.dart';
 
+import '../service/request_service.dart';
+
 class ListTicketView extends StatefulWidget {
   const ListTicketView({super.key});
 
@@ -26,8 +28,10 @@ class _ListTicketViewState extends State<ListTicketView> {
       final dateInit = "${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}";
 
       final vm = context.read<ListTicketViewmodel>();
-      vm.controllerDateStart.text = dateInit;
-      vm.controllerDateEnd.text = dateInit;
+      vm.controllerDateStart.text = RequestServ.isDebug? "01/01/2026" : dateInit;
+      vm.controllerDateEnd.text = RequestServ.isDebug? "31/01/2026" : dateInit;
+
+      if( RequestServ.isDebug ) print("DATE INIT => START ${vm.controllerDateStart.text} | END ${vm.controllerDateEnd.text}");
 
       _showBranchSelectionDialog(context);
     });

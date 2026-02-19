@@ -41,6 +41,7 @@ class ApiResTicket {
   final String? company;
   final String? create_at;
   final List<ItemHistory>? history;
+  final List<ItemEvidence> evidences;
 
   ApiResTicket({
     required this.id,
@@ -54,6 +55,7 @@ class ApiResTicket {
     this.create_at,
     this.company,
     this.history,
+    required this.evidences
   });
 
   factory ApiResTicket.fromJson(Map<String, dynamic> json) {
@@ -68,10 +70,14 @@ class ApiResTicket {
       unitId: json['unitId']?.toString() ?? '',
       company: json['company']?.toString(),
       create_at: (json['create_at'] ?? json['createdAt'])?.toString(),
-      history: json['history'] != null
+      history: json['history'] != null && json['history'] is List
           ? List<ItemHistory>.from(
           (json['history'] as List).map((x) => ItemHistory.fromJson(x)))
-          : null,
+          : [],
+      evidences: json['evidences'] != null && json['evidences'] is List
+          ? List<ItemEvidence>.from(
+          (json['evidences'] as List).map((x) => ItemEvidence.fromJson(x)))
+          : [],
     );
   }
 }
@@ -98,6 +104,38 @@ class ItemHistory {
       changedBy: json['changedBy']?.toString() ?? '',
       id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       ticketId: json['ticketId'] is int ? json['ticketId'] : int.tryParse(json['ticketId']?.toString() ?? '0') ?? 0,
+    );
+  }
+}
+
+class ItemEvidence {
+  final String imageUrl;
+  final String phase;
+  final int sequence;
+  final String status;
+  final int id;
+  final int ticketId;
+  final String createdAt;
+
+  ItemEvidence({
+    required this.imageUrl,
+    required this.phase,
+    required this.sequence,
+    required this.status,
+    required this.id,
+    required this.ticketId,
+    required this.createdAt,
+  });
+
+  factory ItemEvidence.fromJson(Map<String, dynamic> json) {
+    return ItemEvidence(
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      phase: json['phase']?.toString() ?? '',
+      sequence: json['sequence'] is int ? json['sequence'] : int.tryParse(json['sequence']?.toString() ?? '0') ?? 0,
+      status: json['status']?.toString() ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      ticketId: json['ticketId'] is int ? json['ticketId'] : int.tryParse(json['ticketId']?.toString() ?? '0') ?? 0,
+      createdAt: json['createdAt']?.toString() ?? '',
     );
   }
 }
