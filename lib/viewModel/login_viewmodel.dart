@@ -26,6 +26,7 @@ class LoginViewModel extends ChangeNotifier {
 
   Future<bool> login(String email, String password) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     final serv = RequestServ.instance;
@@ -33,19 +34,33 @@ class LoginViewModel extends ChangeNotifier {
     bool isLogin = false;
     try{
 
+      // Aseguramos que los valores sean Strings y no tengan espacios extra
+      final Map<String, dynamic> loginParams = {
+        "username": email.trim(),
+        "password": password.trim(),
+      };
+
+      if( RequestServ.isDebug ){
+        print("LoginViewModel | Enviando params: $loginParams");
+      }
+
       ApiResAuthentication? auth = await serv.handlingRequestParsed<ApiResAuthentication>(
           urlParam: RequestServ.urlAuthentication,
-          params: {
-            "username": email,
-            "password": password
-          },
+          params: loginParams,
           method: "POST",
           asJson: false,
           fromJson: (json) {
-            return ApiResAuthentication.fromJson(json); },
+            if( RequestServ.isDebug ){
+              print("urlAuthentication | json => $json");
+            }
+            return ApiResAuthentication.fromJson(json); 
+          },
       );
 
-      if( auth == null ) return isLogin;
+      if( auth == null ) {
+        _errorMessage = "Error de autenticación. Revisa tus credenciales.";
+        return isLogin;
+      }
 
       isLogin = true;
       UserSession().isLogin = isLogin;
@@ -54,12 +69,12 @@ class LoginViewModel extends ChangeNotifier {
       UserSession().idUser = auth.id;
 
     }catch(e){
-      print(e);
+      print("Error en LoginViewModel: $e");
+      _errorMessage = "Ocurrió un error inesperado.";
     }finally{
       _isLoading = false;
       notifyListeners();
     }
-
 
     return isLogin;
   }

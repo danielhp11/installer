@@ -140,7 +140,199 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                     ),
                     
                     const SizedBox(height: 20),
-                    
+
+                    card(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+
+                            Row(
+                              children: [
+
+                                // region VCC
+                                OutlinedButton(
+                                  onPressed: (){
+                                    if( viewModel.vcc != null ) {
+                                      print("=> open modal to show img");
+                                      return;
+                                    }
+
+                                    print("Evidence VCC");
+                                    setState(() {
+                                      viewModel.vcc = "hola";
+                                    });
+                                  } ,
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: viewModel.vcc == null?  Colors.grey.shade100:Colors.grey,
+                                    side: BorderSide(
+                                      color: viewModel.vcc == null? Colors.grey.shade100: Colors.green.shade200,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                      "VCC"
+                                  ),
+                                ),
+                                // endregion VCC
+
+                                // region GNC
+                                OutlinedButton(
+                                  onPressed: () {
+                                    if( viewModel.gnc != null ) {
+                                      print("=> open modal to show img");
+                                      return;
+                                    }
+                                    print("Evidence GNC");
+                                    setState(() {
+                                      viewModel.gnc = "hola";
+                                    });
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: viewModel.gnc == null? Colors.grey.shade100:Colors.grey,
+                                    side: BorderSide(
+                                      color: viewModel.gnc == null ? Colors.grey.shade100:Colors.green.shade200,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                      "GNC"
+                                  ),
+                                ),
+                                // endregion GNC
+
+                                // region IGNICION
+                                OutlinedButton(
+                                  onPressed:(){
+                                    if( viewModel.ignition != null ) {
+                                      print("=> open modal to show img");
+                                      return;
+                                    }
+                                    setState(() {
+                                      viewModel.ignition = "hola";
+                                    });
+                                    print("Evidence IGNICION");
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    backgroundColor: viewModel.ignition == null? Colors.grey.shade100:Colors.grey,
+                                    side: BorderSide(
+                                      color: viewModel.ignition == null? Colors.grey.shade100:Colors.green.shade200,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                      "IGNICION"
+                                  ),
+                                ),
+                                // endregion IGNICION
+
+                              ]
+                            ),
+
+                            // region UBICACION DEL GPS
+                            OutlinedButton(
+                              onPressed: (){
+                                if( viewModel.gps != null ) {
+                                  print("=> open modal to show img");
+                                  return;
+                                }
+                                setState(() {
+                                  viewModel.gps = "hola";
+                                });
+                                print("Evidence UBICACION DEL GPS");
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: viewModel.gps == null ? Colors.grey.shade100:Colors.grey,
+                                side: BorderSide(
+                                  color:  viewModel.gps == null? Colors.grey.shade100:Colors.green.shade200,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Text(
+                                  "UBICACION DEL GPS"
+                              ),
+                            ),
+                            // endregion UBICACION DEL GPS
+
+                            // region ARMADO DE LA UNIDAD
+                            OutlinedButton(
+                              onPressed: (){
+                                if( viewModel.buildUnit != null ) {
+                                  print("=> open modal to show img");
+                                  return;
+                                }
+                                setState(() {
+                                  viewModel.buildUnit = "hola";
+                                });
+                                print("Evidence ARMADO DE LA UNIDAD");
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor:viewModel.buildUnit == null? Colors.grey.shade100:Colors.grey,
+                                side: BorderSide(
+                                  color: viewModel.buildUnit == null? Colors.grey.shade100:Colors.green.shade200,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Text(
+                                  "ARMADO DE LA UNIDAD"
+                              ),
+                            ),
+                            // endregion ARMADO DE LA UNIDAD
+
+                            // region extra img
+                            OutlinedButton(
+                              onPressed: (){
+                                if( viewModel.extraOne != null ) {
+                                  print("=> open modal to show img");
+                                  return;
+                                }
+                                setState(() {
+                                  viewModel.extraOne = "hola";
+                                });
+                                print("Evidence extra img 1");
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: viewModel.extraOne == null? Colors.grey.shade100:Colors.grey,
+                                side: BorderSide(
+                                  color: viewModel.extraOne == null? Colors.grey.shade100:Colors.green.shade200,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Text(
+                                  "IMAGEN EVIDENCIA OPCIONA 1"
+                              ),
+                            ),
+
+                            OutlinedButton(
+                              onPressed: (){
+                                if( viewModel.extraTwo != null ) {
+                                  print("=> open modal to show img");
+                                  return;
+                                }
+                                setState(() {
+                                  viewModel.extraTwo = "hola";
+                                });
+                                print("Evidence extra img 2");
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: viewModel.extraTwo == null? Colors.grey.shade100:Colors.grey,
+                                side: BorderSide(
+                                  color: viewModel.extraTwo == null? Colors.grey.shade100:Colors.green.shade200,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Text(
+                                  "IMAGEN EVIDENCIA OPCIONA 2"
+                              ),
+                            ),
+                            // endregion extra img
+
+
+                          ]
+                        )
+                    ),
+
+                    const SizedBox(height: 20),
+
                     /// VALIDATION SECTION
                     Container(
                       padding: const EdgeInsets.all(20),
