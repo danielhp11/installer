@@ -6,12 +6,13 @@ import 'package:instaladores_new/widget/text_field_widget.dart';
 import 'package:provider/provider.dart';
 
 import '../service/response_service.dart';
+import '../viewModel/evidence_start_finish_viewmodel.dart';
 import '../viewModel/list_ticket_viewmodel.dart';
 import 'bottom_sheet_utils.dart';
+import 'evidence_gallery.dart';
 
-class InboxItemCard extends StatelessWidget {
+class InboxItemCard extends StatefulWidget {
   final ApiResTicket item;
-  // final VoidCallback onTap;
 
   static const String statusOpen = "ABIERTO";
   static const String statusProcess = "PROCESO";
@@ -19,37 +20,61 @@ class InboxItemCard extends StatelessWidget {
   static const String statusClosed = "CERRADO";
   static const String statusCancel = "CANCELADO";
 
-
-
   const InboxItemCard({
     super.key,
     required this.item,
-    // required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final bool isClosed = item.status == "CERRADO";
-    final bool isCancel = item.status == "CANCELADO";
-    final viewModel = context.watch<ListTicketViewmodel>();
-    //print("=> InboxItemCard: ${item.unitId} ${item.status}");
+  State<InboxItemCard> createState() => _InboxItemCardState();
+}
 
-    // print(item.create_at);
+class _InboxItemCardState extends State<InboxItemCard> {
+  List<ItemEvidence> evidenceStart = [];
+  List<ItemEvidence> evidenceClose = [];
 
-    String formatDateManual(String isoDate) {
-      final DateTime d = DateTime.parse(isoDate);
+  @override
+  void initState() {
+    super.initState();
+    _separateEvidence();
+  }
 
-      String twoDigits(int n) => n.toString().padLeft(2, '0');
-
-      return "${twoDigits(d.day)}/"
-          "${twoDigits(d.month)}/"
-          "${d.year.toString().substring(2)}";
-          // "${d.year.toString().substring(2)} "
-          // "${twoDigits(d.hour)}:"
-          // "${twoDigits(d.minute)}:"
-          // "${twoDigits(d.second)}";
+  @override
+  void didUpdateWidget(covariant InboxItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.evidences != widget.item.evidences) {
+      _separateEvidence();
     }
+  }
 
+  void _separateEvidence() {
+    evidenceStart = widget.item.evidences
+        .where((e) => e.phase.toUpperCase() == "PROCESO")
+        .toList();
+    evidenceClose = widget.item.evidences
+        .where((e) => e.phase.toUpperCase() != "PROCESO")
+        .toList();
+
+    if (RequestServ.isDebug) {
+      print("<=================================================================================================================================>");
+      print("EVIDENCE TICKET => ${widget.item.id}");
+      print("EVIDENCE START => ${evidenceStart.length}");
+      print("EVIDENCE CLOSE => ${evidenceClose.length}");
+      print("<=================================================================================================================================>");
+    }
+  }
+
+  String formatDateManual(String isoDate) {
+    final DateTime d = DateTime.parse(isoDate);
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    return "${twoDigits(d.day)}/${twoDigits(d.month)}/${d.year.toString().substring(2)}";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isClosed = widget.item.status == "CERRADO";
+    final bool isCancel = widget.item.status == "CANCELADO";
+    final viewModel = context.watch<ListTicketViewmodel>();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -112,7 +137,7 @@ class InboxItemCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item.unitId,
+                            widget.item.unitId,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -123,7 +148,7 @@ class InboxItemCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Ticket #${item.id}',
+                            'Ticket #${widget.item.id}',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -151,20 +176,20 @@ class InboxItemCard extends StatelessWidget {
                   children: [
                     _infoChip(
                       Icons.calendar_today_rounded,
-                      formatDateManual(item.create_at!),
+                      formatDateManual(widget.item.create_at!),
                     ),
                     _infoChip(
                       Icons.person_rounded,
-                      item.technicianName,
+                      widget.item.technicianName,
                     ),
                     _infoChip(
                       Icons.business_rounded,
-                      item.company ?? 'N/A',
+                      widget.item.company ?? 'N/A',
                     ),
                   ],
                 ),
 
-                if (item.description.isNotEmpty) ...[
+                if (widget.item.description.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -184,7 +209,7 @@ class InboxItemCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            item.description,
+                            widget.item.description,
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade700,
@@ -199,7 +224,7 @@ class InboxItemCard extends StatelessWidget {
                   ),
                 ],
 
-                if (isCancel && item.history?.last.notes != null) ...[
+                if (isCancel && widget.item.history?.last.notes != null) ...[
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -219,7 +244,7 @@ class InboxItemCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            item.history!.last.notes ?? '',
+                            widget.item.history!.last.notes ?? '',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.red.shade700,
@@ -240,36 +265,32 @@ class InboxItemCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // Start job - only for ABIERTO status
                     _actionIcon(
                       icon: Icons.play_circle_outline_rounded,
                       color: Colors.green.shade700,
-                      visible: !UserSession().isMaster && item.status == statusOpen,
-                      onTap: () => showStarJobFormBottomSheet(context, item),
+                      visible: !UserSession().isMaster && widget.item.status == InboxItemCard.statusOpen,
+                      onTap: () => showStarJobFormBottomSheet(context, widget.item),
                     ),
-                    // Close job - only for PROCESO status
                     _actionIcon(
                       icon: Icons.task_alt_rounded,
                       color: Colors.orange.shade700,
-                      visible: !UserSession().isMaster && item.status == statusProcess,
-                      onTap: () => showCloseJobFormBottomSheet(context, item),
+                      visible: !UserSession().isMaster && widget.item.status == InboxItemCard.statusProcess,
+                      onTap: () => showCloseJobFormBottomSheet(context, widget.item),
                     ),
-                    // Edit - only for master and ABIERTO
                     _actionIcon(
                       icon: Icons.edit_rounded,
-                      visible: UserSession().isMaster && item.status == statusOpen,
-                      onTap: () => showFuelFormBottomSheet(context, item),
+                      visible: UserSession().isMaster && widget.item.status == InboxItemCard.statusOpen,
+                      onTap: () => showFuelFormBottomSheet(context, widget.item),
                     ),
-                    // Delete - only for master and ABIERTO
                     _actionIcon(
                       icon: Icons.delete_rounded,
                       color: Colors.redAccent,
-                      visible: UserSession().isMaster && item.status == statusOpen,
+                      visible: UserSession().isMaster && widget.item.status == InboxItemCard.statusOpen,
                       onTap: () => _showConfirmationDialog(
                         context,
                         (reason) => viewModel.deleteTicket(
                           context: context,
-                          idTicket: item.id,
+                          idTicket: widget.item.id,
                           reason: reason,
                         ),
                       ),
@@ -278,43 +299,79 @@ class InboxItemCard extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 12),
-                //PROCESO = INICIO
-                // PENDIENTE_VALIDACION= FIN
-                item.evidences.length < 1?
-                const SizedBox():
-                card(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        textFieldOnlyRead(label: ".", icon: Icons.photo_camera, value: "EVIDENCIAS"),
-                        Row(
+                if (widget.item.evidences.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      textFieldOnlyRead(
+                        label: "EVIDENCIAS",
+                        icon: Icons.photo_camera,
+                        child: Column(
                           children: [
-
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 6),
-                                child: _evidenceButton("INICIO"),
-                              ),
-                            ),
-
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 6),
-                                child: _evidenceButton("CIERRE"),
-                              ),
-                            ),
-
+                            const SizedBox(height: 15),
+                            Row(
+                              children: [
+                                evidenceStart.length > 0?
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 6),
+                                        child: _evidenceButton(
+                                          "INICIO ${evidenceStart.length}",
+                                          onTap: () {
+                                            _openEvidenceModal(
+                                              context: context,
+                                              title: "Evidencia Inicial",
+                                              evidence: evidenceStart,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    )
+                                    : const SizedBox.shrink(),
+                                evidenceClose.length > 0?
+                                    Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 6),
+                                    child: _evidenceButton(
+                                      "CIERRE ${evidenceClose.length}",
+                                      onTap: () {
+                                        _openEvidenceModal(
+                                          context: context,
+                                          title: "Evidencia Cierre",
+                                          evidence: evidenceClose,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                )
+                                    : const SizedBox.shrink(),
+                              ],
+                            )
                           ],
-                        )
-                      ]
-                    )
-                ),
-
-
+                        ),
+                      ),
+                    ],
+                  )
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _openEvidenceModal({
+    required BuildContext context,
+    required String title,
+    required List<ItemEvidence> evidence,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => EvidenceGallery(
+        title: title,
+        evidence: evidence,
       ),
     );
   }
@@ -352,10 +409,6 @@ class InboxItemCard extends StatelessWidget {
 
   Widget _buildStatusChip() {
     final Color color = _getBadgeColor();
-    // final Color color = item.status == "CERRADO"
-    //     ? Colors.grey
-    //     : Colors.green;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -363,7 +416,7 @@ class InboxItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        item.status,
+        widget.item.status,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
@@ -373,9 +426,13 @@ class InboxItemCard extends StatelessWidget {
     );
   }
 
-  Widget _actionIcon({ required IconData icon, required VoidCallback onTap, required bool visible, Color color = Colors.blue }) {
+  Widget _actionIcon({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool visible,
+    Color color = Colors.blue,
+  }) {
     if (!visible) return const SizedBox.shrink();
-
     return Padding(
       padding: const EdgeInsets.only(left: 8),
       child: InkWell(
@@ -393,109 +450,97 @@ class InboxItemCard extends StatelessWidget {
     );
   }
 
-  Widget _evidenceButton(String text) {
+  Widget _evidenceButton(String text, {required VoidCallback onTap}) {
     return Container(
       height: 38,
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-          colors: [
-          Color(0xFF4CA1AF), // Soft Teal
-      Color(0xFF2C3E50), // Deep Slate Blue
-      ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    stops: const [0.1, 0.9],
-    ),
-    boxShadow: [
-    BoxShadow(
-    color: Color(0xFF2C3E50).withOpacity(0.1),
-    blurRadius: 12,
-    offset: Offset(0, 4),
-    spreadRadius: -2,
-    ),
-    ],
-    ),
-    child: Material(
-    color: Colors.transparent,
-    child: InkWell(
-    onTap: () {},
-    borderRadius: BorderRadius.circular(12),
-    splashColor: Colors.white10,
-    highlightColor: Colors.white.withOpacity(0.05),
-    child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-    Icon(
-    Icons.add_a_photo_rounded,
-    color: Colors.white.withOpacity(0.9),
-    size: 16,
-    ),
-    SizedBox(width: 8),
-    Flexible(
-    child: Text(
-    text.toUpperCase(),
-    overflow: TextOverflow.ellipsis,
-    style: TextStyle(
-    color: Colors.white,
-    fontSize: 11,
-    fontWeight: FontWeight.w800,
-    letterSpacing: 0.8,
-    fontFamily: 'Roboto',
-    ),
-    ),
-    ),
-    ],
-    ),
-    ),
-    ),
-    ),
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7FA8A4), Color(0xFF6C8EA4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          splashColor: Colors.white24,
+          highlightColor: Colors.white10,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.add_a_photo_rounded,
+                  size: 15,
+                  color: Colors.white.withOpacity(0.95),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    text.toUpperCase(),
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.6,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Color _getBadgeColor() {
-    switch (item.status.toUpperCase()) {
-      case statusProcess:
+    switch (widget.item.status.toUpperCase()) {
+      case InboxItemCard.statusProcess:
         return Colors.orange.shade700;
-
-      case statusPendingValidation:
+      case InboxItemCard.statusPendingValidation:
         return Colors.deepPurple.shade700;
-
-      case statusClosed:
+      case InboxItemCard.statusClosed:
         return Colors.lightGreen.shade700;
-
-      case statusCancel:
+      case InboxItemCard.statusCancel:
         return Colors.grey.shade700;
-
       default:
         return Colors.blue.shade700;
     }
   }
 
   Color _getBackgroundColor() {
-    switch (item.status) {
-      case statusProcess:
+    switch (widget.item.status) {
+      case InboxItemCard.statusProcess:
         return Colors.orange.shade50;
-
-      case statusPendingValidation:
+      case InboxItemCard.statusPendingValidation:
         return Colors.deepPurple.shade50;
-
-      case statusClosed:
+      case InboxItemCard.statusClosed:
         return Colors.lightGreen.shade50;
-
-      case statusCancel:
+      case InboxItemCard.statusCancel:
         return Colors.grey.shade50;
-
       default:
         return Colors.blue.shade50;
     }
   }
 
-  void _showConfirmationDialog( BuildContext context, Function(String) onConfirm ) {
+  void _showConfirmationDialog(
+    BuildContext context,
+    Function(String) onConfirm,
+  ) {
     final TextEditingController reasonController = TextEditingController();
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -532,8 +577,8 @@ class InboxItemCard extends StatelessWidget {
                 return TextButton(
                   onPressed: isValid
                       ? () {
-                    onConfirm(reasonController.text.trim());
-                  }
+                          onConfirm(reasonController.text.trim());
+                        }
                       : null,
                   child: Text(
                     'Aceptar',
@@ -549,5 +594,4 @@ class InboxItemCard extends StatelessWidget {
       },
     );
   }
-
 }

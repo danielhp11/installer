@@ -41,7 +41,9 @@ class LoginViewModel extends ChangeNotifier {
       };
 
       if( RequestServ.isDebug ){
+        print("<=================================================================================================================================>");
         print("LoginViewModel | Enviando params: $loginParams");
+        print("<=================================================================================================================================>");
       }
 
       ApiResAuthentication? auth = await serv.handlingRequestParsed<ApiResAuthentication>(
@@ -51,7 +53,9 @@ class LoginViewModel extends ChangeNotifier {
           asJson: false,
           fromJson: (json) {
             if( RequestServ.isDebug ){
+              print("<=================================================================================================================================>");
               print("urlAuthentication | json => $json");
+              print("<=================================================================================================================================>");
             }
             return ApiResAuthentication.fromJson(json); 
           },
@@ -69,7 +73,9 @@ class LoginViewModel extends ChangeNotifier {
       UserSession().idUser = auth.id;
 
     }catch(e){
+      print("<=================================================================================================================================>");
       print("Error en LoginViewModel: $e");
+      print("<=================================================================================================================================>");
       _errorMessage = "Ocurrió un error inesperado.";
     }finally{
       _isLoading = false;
