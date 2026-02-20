@@ -348,6 +348,17 @@ class _StepIndicator extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: primary,
+                          const SizedBox(height: 16),
+                          textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company! ),
+                          const SizedBox(height: 12),
+                          textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId ),
+                          const SizedBox(height: 12),
+                          textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName ),
+                          const SizedBox(height: 12),
+                          textField(viewModel.unitModelCloseController, 'Modelo de unidad (*)', Icons.text_snippet_outlined),
+                          const SizedBox(height: 12),
+                          textField(viewModel.descriptionCloseController, 'Comentario e revisión (*)', Icons.text_snippet_outlined),
+                        ],
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -783,6 +794,49 @@ class _Step2ValidacionMapa extends StatelessWidget {
                                           content: Text(
                                               'Evidencia capturada con éxito'),
                                         ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  color: Colors.blue.shade700,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Validación de Funciones',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función" ),
+                              ),
+                              const SizedBox(),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: viewModel.isDownloadEnabled && viewModel.urlImgComponent == null
+                                      ? () async {
+                                    await viewModel.takeScreenshotAndSave(true);
+                                    if (mounted && viewModel.urlImgComponent != null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Evidencia capturada con éxito')),
                                       );
                                     }
                                   }

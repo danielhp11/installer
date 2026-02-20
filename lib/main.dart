@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:instaladores_new/service/request_service.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
 import 'package:instaladores_new/view/list_ticket_view.dart';
+import 'package:instaladores_new/viewModel/evidence_start_finish_viewmodel.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'core/app_theme.dart';
@@ -17,7 +18,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
-        ChangeNotifierProvider(create: (_) => ListTicketViewmodel())
+        ChangeNotifierProvider(create: (_) => ListTicketViewmodel()),
+        ChangeNotifierProvider(create: (_) => EvidenceStartFinishViewmodel()),
       ],
       child: const MyApp(),
     ),

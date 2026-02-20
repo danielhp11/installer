@@ -180,8 +180,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                         textFieldOnlyRead(
                           label: 'Instalador',
                           icon: Icons.person_search_outlined,
-                          value: UserSession().nameUser,
-                          readOnly: true,
+                          value: UserSession().nameUser
                         ),
                         const SizedBox(height: 16),
                         _unitField(viewModel),
@@ -243,7 +242,7 @@ class _CreateNewTicketForm extends State<CreateNewTicketForm> {
                         Row(
                           children: [
                             Expanded(
-                              child: textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función", readOnly: true ),
+                              child: textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función" ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
