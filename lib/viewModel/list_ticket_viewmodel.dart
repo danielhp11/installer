@@ -11,6 +11,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:instaladores_new/service/offline_sync_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../service/request_service.dart';
 import '../service/response_service.dart';
@@ -19,6 +20,7 @@ import '../service/user_session_service.dart';
 
 enum TicketSortOption { dateDesc, dateAsc, status, unit }
 enum TicketFilterOption { active, cancelled, open, process, pending, closed }
+enum ComponentStatus { idle, selected, uploading, pending, approved, rejected }
 
 class ListTicketViewmodel extends ChangeNotifier {
 
@@ -374,15 +376,9 @@ class ListTicketViewmodel extends ChangeNotifier {
   bool isEvidenceUnitUserStart = false;
   bool isLoadingClose = false;
 
-  // evidence components
-  String? vcc = null;
-  String? gnc = null;
-  String? ignition = null;
-  String? gps = null;
-  String? buildUnit = null;
-  String? extraOne = null;
-  String? extraTwo = null;
-  // evidence components
+  // evidence components — states: idle/selected/uploading/pending/approved/rejected
+  Map<String, ComponentStatus> componentStatuses = {};
+  Map<String, String> componentImageUrls = {};
 
 
   void resetEvidenceClose() {
@@ -400,6 +396,8 @@ class ListTicketViewmodel extends ChangeNotifier {
     currentDistance = 0.0;
     userLat = null;
     userLon = null;
+    componentStatuses = {};
+    componentImageUrls = {};
     notifyListeners();
   }
   // endregion BTN SHEET CLOSE JOB TICKET VIEW
@@ -413,6 +411,240 @@ class ListTicketViewmodel extends ChangeNotifier {
   double? userLat;
   double? userLon;
   // endregion SOCKET
+
+  // region COMPONENT EVIDENCE
+
+  /// Returns true when every component that was selected (non-idle) is approved.
+  bool get allSelectedComponentsApproved {
+    final nonIdle = componentStatuses.values
+        .where((s) => s != ComponentStatus.idle)
+        .toList();
+    if (nonIdle.isEmpty) return true; // ninguno seleccionado → se permite avanzar
+    return nonIdle.every((s) => s == ComponentStatus.approved);
+  }
+
+  /// Handles a tap on a component button.
+  /// [componentName] uses API strings (VCC, GND, IGNITION, GPS, UNIT_ASSEMBLY, p_extra1, p_extra2).
+  Future<void> handleComponentTap(
+    String componentName,
+    String ticketId,
+    BuildContext context,
+  ) async {
+    final current = componentStatuses[componentName] ?? ComponentStatus.idle;
+
+    // 1. Si está aprobado, mostrar la imagen
+    if (current == ComponentStatus.approved) {
+      final url = componentImageUrls[componentName];
+      if (url != null && context.mounted) {
+        _showImagePreview(context, componentName, url);
+      }
+      return;
+    }
+
+    // 2. Si está subiendo o pendiente, no hacer nada
+    if (current == ComponentStatus.uploading ||
+        current == ComponentStatus.pending) {
+      return;
+    }
+
+    // 3. Abrir cámara directamente
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+    if (pickedFile == null) return;
+
+    componentStatuses[componentName] = ComponentStatus.uploading;
+    notifyListeners();
+
+    // Upload image file
+    final imageUrl = await uploadPhoto(pickedFile.path);
+    if (imageUrl == null) {
+      componentStatuses[componentName] = ComponentStatus.selected;
+      notifyListeners();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Error al subir la imagen, intenta de nuevo.')),
+        );
+      }
+      return;
+    }
+
+    // Register in BD
+    final saved = await saveComponentEvidence(
+      ticketId: ticketId,
+      componentName: componentName,
+      imageUrl: imageUrl,
+    );
+
+    componentStatuses[componentName] =
+        saved ? ComponentStatus.pending : ComponentStatus.selected;
+    notifyListeners();
+  }
+
+  /// POST /tickets/{ticketId}/component-evidence
+  Future<bool> saveComponentEvidence({
+    required String ticketId,
+    required String componentName,
+    required String imageUrl,
+  }) async {
+    try {
+      final uri =
+          Uri.parse('${RequestServ.baseUrlNor}tickets/$ticketId/component-evidence')
+              .replace(queryParameters: {
+        'modifierId': UserSession().idUser.toString(),
+      });
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'componentName': componentName,
+              'imageUrl': imageUrl,
+              'status': 'ACTIVO',
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('[ ERR ] saveComponentEvidence: $e');
+      return false;
+    }
+  }
+
+  void _showImagePreview(BuildContext context, String title, String url) {
+    final resolvedUrl = _resolveImageUrl(url);
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  resolvedUrl,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                        child: CircularProgressIndicator(color: Colors.white));
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image, color: Colors.white, size: 50),
+                          SizedBox(height: 10),
+                          Text('No se pudo cargar la imagen',
+                              style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            Positioned(
+              top: 50,
+              left: 20,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _resolveImageUrl(String path) {
+    if (path.isEmpty) return '';
+    if (path.startsWith('http')) return path;
+
+    // Remove /api/ if present in baseUrlNor to get the root
+    String base = RequestServ.baseUrlNor;
+    if (base.endsWith('/api/')) {
+      base = base.substring(0, base.length - 5);
+    } else if (base.endsWith('/api')) {
+      base = base.substring(0, base.length - 4);
+    }
+
+    // Ensure base ends with / if path doesn't start with /
+    // Or remove trailing / from base if path starts with /
+    if (base.endsWith('/') && path.startsWith('/')) {
+      base = base.substring(0, base.length - 1);
+    } else if (!base.endsWith('/') && !path.startsWith('/')) {
+      base = '$base/';
+    }
+
+    return '$base$path';
+  }
+
+  /// GET /tickets/{ticketId}/component-evidence — polls admin validation status.
+  Future<void> pollComponentStatuses(String ticketId) async {
+    try {
+      final uri = Uri.parse(
+          '${RequestServ.baseUrlNor}tickets/$ticketId/component-evidence');
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return;
+
+      final List<dynamic> list = jsonDecode(response.body);
+      bool changed = false;
+
+      for (final item in list) {
+        final name = item['componentName'] as String?;
+        final status = (item['status'] as String? ?? '').toUpperCase();
+        final imageUrl = item['imageUrl'] as String?;
+        if (name == null) continue;
+
+        if (imageUrl != null) {
+          componentImageUrls[name] = imageUrl;
+        }
+
+        final current = componentStatuses[name] ?? ComponentStatus.idle;
+        // Only update if we are waiting for admin (pending)
+        if (current == ComponentStatus.pending ||
+            current == ComponentStatus.selected ||
+            current == ComponentStatus.rejected) {
+          ComponentStatus next;
+          if (status == 'VALIDADA' || status == 'APROBADO') {
+            next = ComponentStatus.approved;
+          } else if (status == 'RECHAZADO') {
+            next = ComponentStatus.rejected;
+          } else {
+            continue;
+          }
+          componentStatuses[name] = next;
+          changed = true;
+        }
+      }
+
+      if (changed) notifyListeners();
+    } catch (e) {
+      debugPrint('[ ERR ] pollComponentStatuses: $e');
+    }
+  }
+
+  // endregion COMPONENT EVIDENCE
 
   /*================ FUNCTIONS =================*/
 
@@ -801,27 +1033,6 @@ class ListTicketViewmodel extends ChangeNotifier {
 
     if (shouldPop && !formKeyCloseJob.currentState!.validate()) return;
 
-    if(!isEvidenceUnitUserClose){
-      if (shouldPop) {
-        AnimatedResultDialog.showError(
-            context,
-            title: "No hay evidencias",
-            message: "Por lo menos una foto es requerida del mapa y la undiad"
-        );
-      }
-      return;
-    }
-    if(!isValidateComponent){
-      if (shouldPop) {
-        AnimatedResultDialog.showError(
-            context,
-            title: "No hay evidencias",
-            message: "Asegúrate de que los componentes funcionen correctamente."
-        );
-      }
-      return;
-    }
-
     if( evidenceClosePhotos.length < 2 ) {
       if (shouldPop) {
         AnimatedResultDialog.showError(
@@ -829,17 +1040,6 @@ class ListTicketViewmodel extends ChangeNotifier {
             title: "No hay evidencias",
             message: "Por lo menos una foto es requerida"
         );
-      }
-      return;
-    }
-
-    if( urlImgComponent == null ) {
-      if (shouldPop) {
-        AnimatedResultDialog.showError(
-            context,
-            title: "No hay validacion",
-            message: "Por favor valida que los coponentes funcionen correctamente"
-          );
       }
       return;
     }
