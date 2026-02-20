@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:instaladores_new/service/user_session_service.dart';
 import 'package:instaladores_new/view/login_view.dart';
+import 'package:instaladores_new/viewModel/evidence_start_finish_viewmodel.dart';
 import 'package:instaladores_new/widget/bottom_sheet_utils.dart';
 import 'package:instaladores_new/widget/inbox_item_card.dart';
 import 'package:instaladores_new/viewModel/list_ticket_viewmodel.dart';
@@ -16,22 +17,25 @@ class ListTicketView extends StatefulWidget {
 }
 
 class _ListTicketViewState extends State<ListTicketView> {
-
-
   final DateTime today = DateTime.now();
+  bool _showExtraFilters = false;
+  bool _showSearch = false;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
-
       final dateInit = "${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}";
 
       final vm = context.read<ListTicketViewmodel>();
       vm.controllerDateStart.text = RequestServ.isDebug? "01/01/2026" : dateInit;
       vm.controllerDateEnd.text = RequestServ.isDebug? "31/01/2026" : dateInit;
 
-      if( RequestServ.isDebug ) print("DATE INIT => START ${vm.controllerDateStart.text} | END ${vm.controllerDateEnd.text}");
+      if( RequestServ.isDebug ) {
+        print("<=================================================================================================================================>");
+        print("DATE INIT => START ${vm.controllerDateStart.text} | END ${vm.controllerDateEnd.text}");
+        print("<=================================================================================================================================>");
+      }
 
       _showBranchSelectionDialog(context);
     });
@@ -43,8 +47,6 @@ class _ListTicketViewState extends State<ListTicketView> {
     String company = UserSession().branchRoot;
     String nameUser = UserSession().nameUser;
     String nameType = UserSession().isMaster ? 'Master' : 'Instalador';
-
-
 
     return Scaffold(
       appBar: AppBar(
@@ -230,131 +232,204 @@ class _ListTicketViewState extends State<ListTicketView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SearchBar(
-            hintText: 'Buscar por unidad...',
-            leading: Icon(Icons.search_rounded, color: Theme.of(context).primaryColor),
-            onChanged: (value) => vm.setSearchQuery(value),
-            elevation: WidgetStateProperty.all(0),
-            backgroundColor: WidgetStateProperty.all(Colors.grey.withOpacity(0.08)),
-            shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          // Buscador colapsable
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Column(
+              children: [
+                SearchBar(
+                  hintText: 'Buscar por unidad...',
+                  leading: Icon(Icons.search_rounded, color: Theme.of(context).primaryColor),
+                  onChanged: (value) => vm.setSearchQuery(value),
+                  elevation: WidgetStateProperty.all(0),
+                  backgroundColor: WidgetStateProperty.all(Colors.grey.withOpacity(0.08)),
+                  shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
+                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
+                ),
+                const SizedBox(height: 12),
+              ],
             ),
-            padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
+            crossFadeState: _showSearch ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
           ),
-          const SizedBox(height: 16),
+
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: TextField(
-                  controller: vm.controllerDateStart,
-                  readOnly: true,
-                  onTap: () => _pickDate(vm: vm),
-                  decoration: InputDecoration(
-                    labelText: "Fecha inicio",
-                    labelStyle: TextStyle(color: Theme.of(context).primaryColor),
-                    suffixIcon: Icon(Icons.calendar_today_rounded, color: Theme.of(context).primaryColor),
-                  ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: vm.controllerDateStart,
+                            readOnly: true,
+                            onTap: () => _pickDate(vm: vm),
+                            decoration: InputDecoration(
+                              labelText: "Fecha inicio",
+                              labelStyle: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12),
+                              isDense: true,
+                              suffixIcon: Icon(Icons.calendar_today_rounded, color: Theme.of(context).primaryColor, size: 18),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: vm.controllerDateEnd,
+                            readOnly: true,
+                            onTap: () => _pickDate(isStartDate: false, vm: vm),
+                            decoration: InputDecoration(
+                              labelText: "Fecha final",
+                              labelStyle: TextStyle(color: Theme.of(context).primaryColor, fontSize: 12),
+                              isDense: true,
+                              suffixIcon: Icon(Icons.event_rounded, color: Theme.of(context).primaryColor, size: 18),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: vm.controllerDateEnd,
-                  readOnly: true,
-                  onTap: () => _pickDate(isStartDate: false, vm: vm),
-                  decoration: InputDecoration(
-                    labelText: "Fecha final",
-                    labelStyle: TextStyle(color: Theme.of(context).primaryColor),
-                    suffixIcon: Icon(Icons.event_rounded, color: Theme.of(context).primaryColor),
+
+              // Botones apilados en Columna para ahorrar espacio horizontal
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Botón para expandir buscador
+                  Material(
+                    color: _showSearch ? Theme.of(context).primaryColor : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      onTap: () => setState(() => _showSearch = !_showSearch),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+                          color: _showSearch ? Colors.white : Theme.of(context).primaryColor,
+                          size: 18,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  // Botón para expandir filtros
+                  Material(
+                    color: _showExtraFilters ? Theme.of(context).primaryColor : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      onTap: () => setState(() => _showExtraFilters = !_showExtraFilters),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          _showExtraFilters ? Icons.filter_list_off_rounded : Icons.filter_list_rounded,
+                          color: _showExtraFilters ? Colors.white : Theme.of(context).primaryColor,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Estado',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+
+          // Sección colapsable de filtros adicionales
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SortChip(
-                  label: 'Todos Activos',
-                  icon: Icons.check_circle_outline_rounded,
-                  isSelected: vm.selectedFilters.contains(TicketFilterOption.active),
-                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.active),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 16),
+                const Text(
+                  'Estado',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
                 ),
-                const SizedBox(width: 8),
-                _SortChip(
-                  label: 'Abierto',
-                  icon: Icons.lock_open_rounded,
-                  isSelected: vm.selectedFilters.contains(TicketFilterOption.open),
-                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.open),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _SortChip(
+                        label: 'Todos Activos',
+                        icon: Icons.check_circle_outline_rounded,
+                        isSelected: vm.selectedFilters.contains(TicketFilterOption.active),
+                        onSelected: () => vm.toggleFilterOption(TicketFilterOption.active),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Abierto',
+                        icon: Icons.lock_open_rounded,
+                        isSelected: vm.selectedFilters.contains(TicketFilterOption.open),
+                        onSelected: () => vm.toggleFilterOption(TicketFilterOption.open),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Proceso',
+                        icon: Icons.pending_actions_rounded,
+                        isSelected: vm.selectedFilters.contains(TicketFilterOption.process),
+                        onSelected: () => vm.toggleFilterOption(TicketFilterOption.process),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'P. Validación',
+                        icon: Icons.rule_rounded,
+                        isSelected: vm.selectedFilters.contains(TicketFilterOption.pending),
+                        onSelected: () => vm.toggleFilterOption(TicketFilterOption.pending),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Cerrado',
+                        icon: Icons.lock_rounded,
+                        isSelected: vm.selectedFilters.contains(TicketFilterOption.closed),
+                        onSelected: () => vm.toggleFilterOption(TicketFilterOption.closed),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Cancelados',
+                        icon: Icons.cancel_outlined,
+                        isSelected: vm.selectedFilters.contains(TicketFilterOption.cancelled),
+                        onSelected: () => vm.toggleFilterOption(TicketFilterOption.cancelled),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 8),
-                _SortChip(
-                  label: 'Proceso',
-                  icon: Icons.pending_actions_rounded,
-                  isSelected: vm.selectedFilters.contains(TicketFilterOption.process),
-                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.process),
+                const SizedBox(height: 16),
+                const Text(
+                  'Ordenar',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
                 ),
-                const SizedBox(width: 8),
-                _SortChip(
-                  label: 'P. Validación',
-                  icon: Icons.rule_rounded,
-                  isSelected: vm.selectedFilters.contains(TicketFilterOption.pending),
-                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.pending),
-                ),
-                const SizedBox(width: 8),
-                _SortChip(
-                  label: 'Cerrado',
-                  icon: Icons.lock_rounded,
-                  isSelected: vm.selectedFilters.contains(TicketFilterOption.closed),
-                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.closed),
-                ),
-                const SizedBox(width: 8),
-                _SortChip(
-                  label: 'Cancelados',
-                  icon: Icons.cancel_outlined,
-                  isSelected: vm.selectedFilters.contains(TicketFilterOption.cancelled),
-                  onSelected: () => vm.toggleFilterOption(TicketFilterOption.cancelled),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _SortChip(
+                      label: 'Más Recientes',
+                      icon: Icons.arrow_downward_rounded,
+                      isSelected: vm.sortOption == TicketSortOption.dateDesc,
+                      onSelected: () => vm.setSortOption(TicketSortOption.dateDesc),
+                    ),
+                    const SizedBox(width: 8),
+                    _SortChip(
+                      label: 'Más Antiguos',
+                      icon: Icons.arrow_upward_rounded,
+                      isSelected: vm.sortOption == TicketSortOption.dateAsc,
+                      onSelected: () => vm.setSortOption(TicketSortOption.dateAsc),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Ordenar',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _SortChip(
-                label: 'Más Recientes',
-                icon: Icons.arrow_downward_rounded,
-                isSelected: vm.sortOption == TicketSortOption.dateDesc,
-                onSelected: () => vm.setSortOption(TicketSortOption.dateDesc),
-              ),
-              const SizedBox(width: 8),
-              _SortChip(
-                label: 'Más Antiguos',
-                icon: Icons.arrow_upward_rounded,
-                isSelected: vm.sortOption == TicketSortOption.dateAsc,
-                onSelected: () => vm.setSortOption(TicketSortOption.dateAsc),
-              ),
-            ],
+            crossFadeState: _showExtraFilters ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
           ),
         ],
       ),

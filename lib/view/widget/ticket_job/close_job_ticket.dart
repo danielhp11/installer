@@ -126,11 +126,11 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company!, readOnly: true ),
+                          textFieldOnlyRead( label: 'Empresa', icon: Icons.business, value: widget.ticket.company! ),
                           const SizedBox(height: 12),
-                          textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId, readOnly: true ),
+                          textFieldOnlyRead( label: 'Unidad', icon: Icons.bus_alert, value: widget.ticket.unitId ),
                           const SizedBox(height: 12),
-                          textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName, readOnly: true, ),
+                          textFieldOnlyRead( label: 'Instalador', icon: Icons.person_search_outlined, value: widget.ticket.technicianName ),
                           const SizedBox(height: 12),
                           textField(viewModel.unitModelCloseController, 'Modelo de unidad (*)', Icons.text_snippet_outlined),
                           const SizedBox(height: 12),
@@ -380,7 +380,7 @@ class _CloseJobTicket extends State<CloseJobTicket> {
                           Row(
                             children: [
                               Expanded(
-                                child: textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función", readOnly: true ),
+                                child: textFieldOnlyRead( label: '', icon: Icons.assignment_turned_in, value: "Valida la función" ),
                               ),
                               const SizedBox(),
                               Expanded(
