@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'response_service.dart';
 
 class RequestServ {
-  static bool isDebug = true;
+  static bool isDebug = false;
 
   static String baseUrlNor = isDebug? "http://172.16.2.147:8000/" : "https://instaladores.geovoy.com/api/";
   //static String baseUrlNor = isDebug? "http://127.0.0.1:8000/" : "https://instaladores.geovoy.com/api/";

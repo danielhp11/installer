@@ -52,40 +52,34 @@ Widget textFieldOnlyRead({
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-
-              /// Icon
               Icon(
                 icon,
                 size: 20,
                 color: Colors.blueGrey,
               ),
-
               const SizedBox(width: 10),
-
-              /// Label
-              Text(
-                "$label:",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blueGrey.shade700,
+              Flexible(
+                child: Text(
+                  "$label:",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blueGrey.shade700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-
-
-          const SizedBox(width: 8),
-
-          /// Value
-          value == null || value.isEmpty ? const SizedBox(width: 8)
-          : Expanded(
-            child: Text(
+          const SizedBox(height: 8),
+          if (value != null && value.isNotEmpty)
+            Text(
               value,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 15,
@@ -93,11 +87,8 @@ Widget textFieldOnlyRead({
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-
-          (child ?? const SizedBox()),
-
-        ]
+          if (child != null) child,
+        ],
       ),
     ),
   );
